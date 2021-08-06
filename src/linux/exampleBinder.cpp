@@ -16,12 +16,21 @@ ModeConfig::MODE_CONFIG unity_mode_config;
 libeYs3D::video::DEPTH_RAW_DATA_TYPE unity_depth_raw_data_type;
 
 
-CameraOpenConfig get_mode_config()
+CameraOpenConfig get_mode_config(int mode)
 {
     CameraOpenConfig config = {
         0 , 1280 ,720 , 5 ,640 ,720, 2
     };
-    modeConfigOptions = unity_device->getModeConfigOptions();
+    bool isInterleave = false;
+    auto currentUSBType = unity_device->getUsbPortType();
+    unsigned short pid = unity_device->getCameraDeviceInfo().devInfo.wPID;
+    modeConfigOptions = unity_device->getModeConfigOptions(currentUSBType, pid);
+    for (auto& modeItem : modeConfigOptions->GetModes()) {
+        if (modeItem.iMode == mode && ETronDI_OK == modeConfigOptions->SelectCurrentIndex(mode)) {
+            LOG_INFO(LOG_TAG, "Found index = %d\n", mode);
+            break;
+        }
+    }
     LOG_INFO(LOG_TAG, "index = %d\n", modeConfigOptions->GetCurrentIndex());
     unity_mode_config = modeConfigOptions->GetCurrentModeInfo();
     LOG_INFO(LOG_TAG, "iMode=%d, iUSB_Type=%d, iInterLeaveModeFPS=%d, bRectifyMode=%d\n",
@@ -33,19 +42,42 @@ CameraOpenConfig get_mode_config()
                       unity_mode_config.D_Resolution.Width, unity_mode_config.D_Resolution.Height,
                       unity_mode_config.vecDepthType.at(0), unity_mode_config.vecColorFps.at(0), unity_mode_config.vecDepthFps.size());
 
-    switch(unity_mode_config.vecDepthType.at(0)){
-        case 8: unity_depth_raw_data_type = libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_8_BITS;
-            break;
-        case 11:unity_depth_raw_data_type = libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_11_BITS;
-            break;
-        case 14:unity_depth_raw_data_type = libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_14_BITS;
-            break;
+    if(unity_mode_config.vecDepthType.empty()) {
+        unity_depth_raw_data_type = libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_OFF_RAW;
+    } else {
+        switch(unity_mode_config.vecDepthType.at(0)){
+            case 8:
+                unity_depth_raw_data_type = unity_mode_config.bRectifyMode ?
+                                            libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_8_BITS:
+                                            libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_8_BITS_RAW;
+                break;
+            case 11:
+                unity_depth_raw_data_type = unity_mode_config.bRectifyMode ?
+                                            libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_11_BITS:
+                                            libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_11_BITS_RAW;
+                break;
+            case 14:
+                unity_depth_raw_data_type = unity_mode_config.bRectifyMode ?
+                                            libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_14_BITS:
+                                            libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_14_BITS_RAW;
+                break;
+        }
     }
 
-    config.colorFormat = unity_mode_config.eDecodeType_L;
+    if (unity_device->getCameraDeviceInfo().devInfo.wPID == 0x120 && unity_mode_config.D_Resolution.Height == 360) {
+        unity_depth_raw_data_type = static_cast<DEPTH_RAW_DATA_TYPE>(unity_depth_raw_data_type + ETronDI_DEPTH_DATA_SCALE_DOWN_MODE_OFFSET);
+    }
+
+    if (isInterleave) {
+        unity_depth_raw_data_type = static_cast<DEPTH_RAW_DATA_TYPE>(unity_depth_raw_data_type + ETronDI_DEPTH_DATA_INTERLEAVE_MODE_OFFSET);
+    }
+
+    config.videoMode = unity_depth_raw_data_type;
+    config.colorFormat = unity_mode_config.eDecodeType_L == ModeConfig::MODE_CONFIG::YUYV ?
+            libeYs3D::video::COLOR_RAW_DATA_YUY2 : libeYs3D::video::COLOR_RAW_DATA_MJPG;
     config.colorWidth = unity_mode_config.L_Resolution.Width;
     config.colorHeight = unity_mode_config.L_Resolution.Height;
-    config.fps = unity_mode_config.vecColorFps.at(0);
+    config.fps = !unity_mode_config.vecColorFps.empty() ? unity_mode_config.vecColorFps.at(0) : unity_mode_config.vecDepthFps.at(0);
     config.depthWidth = unity_mode_config.D_Resolution.Width;
     config.depthHeight = unity_mode_config.D_Resolution.Height;
 
@@ -104,7 +136,7 @@ int open_device(CameraOpenConfig config)
     printf("\n\nEnabling device stream...\n");
     unity_pipeline = unity_device->initStream((libeYs3D::video::COLOR_RAW_DATA_TYPE)config.colorFormat,
                                               config.colorWidth, config.colorHeight, config.fps,
-                                              libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_11_BITS,
+                                              static_cast<DEPTH_RAW_DATA_TYPE>(config.videoMode),
                                               config.depthWidth, config.depthHeight,
                                               DEPTH_IMG_COLORFUL_TRANSFER,
                                               IMAGE_SN_SYNC,

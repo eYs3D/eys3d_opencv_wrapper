@@ -7,7 +7,6 @@
 	copied without the prior permission of eYs3D an Etron company.
  */
 #pragma once
-#include <minwindef.h>
 
 #ifndef ETRONDI_API
 #ifdef __WEYE__
@@ -105,6 +104,7 @@ typedef struct tagETRONDI_STREAM_INFO {
 #define ETronDI_PID_AMBER   0x0112
 #define ETronDI_PID_SALLY   0x0158
 #define ETronDI_PID_8062    0x0162
+#define ETronDI_PID_Hypatia 0x0160
 
 #define BIT_SET(a,b) ((a) |= (1<<(b)))
 #define BIT_CLEAR(a,b) ((a) &= ~(1<<(b)))
@@ -134,7 +134,8 @@ typedef struct tagETRONDI_STREAM_INFO {
 #define ETronDI_DEPTH_DATA_11_BITS_COMBINED_RECTIFY		13// multi-baseline
 
 // For Inter-Leave-Mode Depth Data Type
-#define ETronDI_DEPTH_DATA_ILM_DEFAULT						16
+#define ETronDI_DEPTH_DATA_INTERLEAVE_MODE_OFFSET           16
+#define ETronDI_DEPTH_DATA_ILM_DEFAULT                      16
 #define ETronDI_DEPTH_DATA_ILM_OFF_RAW						16 // raw (depth off, only raw color)
 #define ETronDI_DEPTH_DATA_ILM_8_BITS						17 // rectify
 #define ETronDI_DEPTH_DATA_ILM_14_BITS						18 // rectify
@@ -149,6 +150,36 @@ typedef struct tagETRONDI_STREAM_INFO {
 #define ETronDI_DEPTH_DATA_ILM_14_BITS_COMBINED_RECTIFY		27// multi-baseline
 #define ETronDI_DEPTH_DATA_ILM_8_BITS_x80_COMBINED_RECTIFY	28// multi-baseline
 #define ETronDI_DEPTH_DATA_ILM_11_BITS_COMBINED_RECTIFY		29// multi-baseline
+
+#define ETronDI_DEPTH_DATA_SCALE_DOWN_MODE_OFFSET 32
+#define ETronDI_DEPTH_DATA_SCALE_DOWN_OFF_RAW			    (ETronDI_DEPTH_DATA_OFF_RAW + ETronDI_DEPTH_DATA_SCALE_DOWN_MODE_OFFSET)/* raw (depth off, only raw color) */
+#define ETronDI_DEPTH_DATA_SCALE_DOWN_DEFAULT			    (ETronDI_DEPTH_DATA_DEFAULT + ETronDI_DEPTH_DATA_SCALE_DOWN_MODE_OFFSET)  /* raw (depth off, only raw color) */
+#define ETronDI_DEPTH_DATA_SCALE_DOWN_8_BITS				(ETronDI_DEPTH_DATA_8_BITS + ETronDI_DEPTH_DATA_SCALE_DOWN_MODE_OFFSET)/* rectify, 1 byte per pixel */
+#define ETronDI_DEPTH_DATA_SCALE_DOWN_14_BITS				(ETronDI_DEPTH_DATA_14_BITS + ETronDI_DEPTH_DATA_SCALE_DOWN_MODE_OFFSET) /* rectify, 2 byte per pixel */
+#define ETronDI_DEPTH_DATA_SCALE_DOWN_8_BITS_x80			(ETronDI_DEPTH_DATA_8_BITS_x80 + ETronDI_DEPTH_DATA_SCALE_DOWN_MODE_OFFSET) /* rectify, 2 byte per pixel but using 1 byte only */
+#define ETronDI_DEPTH_DATA_SCALE_DOWN_11_BITS				(ETronDI_DEPTH_DATA_11_BITS + ETronDI_DEPTH_DATA_SCALE_DOWN_MODE_OFFSET)/* rectify, 2 byte per pixel but using 11 bit only */
+#define ETronDI_DEPTH_DATA_SCALE_DOWN_OFF_RECTIFY		    (ETronDI_DEPTH_DATA_OFF_RECTIFY + ETronDI_DEPTH_DATA_SCALE_DOWN_MODE_OFFSET) /* Rule 0.4b  Reserved unused in any firmware*/
+#define ETronDI_DEPTH_DATA_SCALE_DOWN_8_BITS_RAW			(ETronDI_DEPTH_DATA_8_BITS_RAW + ETronDI_DEPTH_DATA_SCALE_DOWN_MODE_OFFSET) /* raw */
+#define ETronDI_DEPTH_DATA_SCALE_DOWN_14_BITS_RAW		    (ETronDI_DEPTH_DATA_14_BITS_RAW + ETronDI_DEPTH_DATA_SCALE_DOWN_MODE_OFFSET) /* raw */
+#define ETronDI_DEPTH_DATA_SCALE_DOWN_8_BITS_x80_RAW	    (ETronDI_DEPTH_DATA_8_BITS_x80_RAW + ETronDI_DEPTH_DATA_SCALE_DOWN_MODE_OFFSET) /* raw */
+#define ETronDI_DEPTH_DATA_SCALE_DOWN_11_BITS_RAW		    (ETronDI_DEPTH_DATA_11_BITS_RAW + ETronDI_DEPTH_DATA_SCALE_DOWN_MODE_OFFSET) /* raw */
+#define ETronDI_DEPTH_DATA_SCALE_DOWN_14_BITS_COMBINED_RECTIFY     (ETronDI_DEPTH_DATA_14_BITS_COMBINED_RECTIFY + ETronDI_DEPTH_DATA_SCALE_DOWN_MODE_OFFSET) /* Rule 0.4b Reserved unused in any firmware*/
+#define ETronDI_DEPTH_DATA_SCALE_DOWN_11_BITS_COMBINED_RECTIFY     (ETronDI_DEPTH_DATA_11_BITS_COMBINED_RECTIFY + ETronDI_DEPTH_DATA_SCALE_DOWN_MODE_OFFSET) /* Rule 0.4b Reserved unused in any firmware*/
+
+// For Interleave mode depth data type
+#define ETronDI_DEPTH_DATA_SCALE_DOWN_ILM_OFF_RAW			(ETronDI_DEPTH_DATA_SCALE_DOWN_OFF_RAW + ETronDI_DEPTH_DATA_INTERLEAVE_MODE_OFFSET) /* raw (depth off, only raw color) */
+#define ETronDI_DEPTH_DATA_SCALE_DOWN_ILM_DEFAULT			(ETronDI_DEPTH_DATA_SCALE_DOWN_DEFAULT + ETronDI_DEPTH_DATA_INTERLEAVE_MODE_OFFSET) /* raw (depth off, only raw color) */
+#define ETronDI_DEPTH_DATA_SCALE_DOWN_ILM_8_BITS			(ETronDI_DEPTH_DATA_SCALE_DOWN_8_BITS + ETronDI_DEPTH_DATA_INTERLEAVE_MODE_OFFSET) /* rectify, 1 byte per pixel */
+#define ETronDI_DEPTH_DATA_SCALE_DOWN_ILM_14_BITS			(ETronDI_DEPTH_DATA_SCALE_DOWN_14_BITS + ETronDI_DEPTH_DATA_INTERLEAVE_MODE_OFFSET) /* rectify, 2 byte per pixel */
+#define ETronDI_DEPTH_DATA_SCALE_DOWN_ILM_8_BITS_x80		(ETronDI_DEPTH_DATA_SCALE_DOWN_8_BITS_x80 + ETronDI_DEPTH_DATA_INTERLEAVE_MODE_OFFSET) /* rectify, 2 byte per pixel but using 1 byte only */
+#define ETronDI_DEPTH_DATA_SCALE_DOWN_ILM_11_BITS			(ETronDI_DEPTH_DATA_SCALE_DOWN_11_BITS + ETronDI_DEPTH_DATA_INTERLEAVE_MODE_OFFSET) /* rectify, 2 byte per pixel but using 11 bit only */
+#define ETronDI_DEPTH_DATA_SCALE_DOWN_ILM_OFF_RECTIFY		(ETronDI_DEPTH_DATA_SCALE_DOWN_OFF_RECTIFY + ETronDI_DEPTH_DATA_INTERLEAVE_MODE_OFFSET) /* rectify (depth off, only rectify color) */
+#define ETronDI_DEPTH_DATA_SCALE_DOWN_ILM_8_BITS_RAW		(ETronDI_DEPTH_DATA_SCALE_DOWN_8_BITS_RAW + ETronDI_DEPTH_DATA_INTERLEAVE_MODE_OFFSET) /* raw */
+#define ETronDI_DEPTH_DATA_SCALE_DOWN_ILM_14_BITS_RAW		(ETronDI_DEPTH_DATA_SCALE_DOWN_14_BITS_RAW + ETronDI_DEPTH_DATA_INTERLEAVE_MODE_OFFSET) /* raw */
+#define ETronDI_DEPTH_DATA_SCALE_DOWN_ILM_8_BITS_x80_RAW	(ETronDI_DEPTH_DATA_SCALE_DOWN_8_BITS_x80_RAW + ETronDI_DEPTH_DATA_INTERLEAVE_MODE_OFFSET) /* raw */
+#define ETronDI_DEPTH_DATA_SCALE_DOWN_ILM_11_BITS_RAW		(ETronDI_DEPTH_DATA_SCALE_DOWN_11_BITS_RAW + ETronDI_DEPTH_DATA_INTERLEAVE_MODE_OFFSET) /* raw */
+#define ETronDI_DEPTH_DATA_SCALE_DOWN_ILM_14_BITS_COMBINED_RECTIFY     (ETronDI_DEPTH_DATA_SCALE_DOWN_14_BITS_COMBINED_RECTIFY + ETronDI_DEPTH_DATA_INTERLEAVE_MODE_OFFSET) //
+#define ETronDI_DEPTH_DATA_SCALE_DOWN_ILM_11_BITS_COMBINED_RECTIFY (ETronDI_DEPTH_DATA_SCALE_DOWN_11_BITS_COMBINED_RECTIFY + ETronDI_DEPTH_DATA_INTERLEAVE_MODE_OFFSET) // multi-baseline
 
 
 // For Flash Read/Write
@@ -364,37 +395,57 @@ struct EtronDIImageType
         return (type != IMAGE_UNKNOWN && !IsImageColor(type));
     }
 
-    static EtronDIImageType::Value DepthDataTypeToDepthImageType(WORD dataType)
-    {
-        switch (dataType)
-        {
-        case ETronDI_DEPTH_DATA_ILM_8_BITS:
-        case ETronDI_DEPTH_DATA_ILM_8_BITS_RAW:
-        case ETronDI_DEPTH_DATA_8_BITS:
-        case ETronDI_DEPTH_DATA_8_BITS_RAW:
-            return EtronDIImageType::DEPTH_8BITS;
-        case ETronDI_DEPTH_DATA_ILM_8_BITS_x80:
-        case ETronDI_DEPTH_DATA_ILM_8_BITS_x80_RAW:
-        case ETronDI_DEPTH_DATA_8_BITS_x80:
-        case ETronDI_DEPTH_DATA_8_BITS_x80_RAW:
-            return EtronDIImageType::DEPTH_8BITS_0x80;
-        case ETronDI_DEPTH_DATA_ILM_11_BITS:
-        case ETronDI_DEPTH_DATA_ILM_11_BITS_RAW:
-        case ETronDI_DEPTH_DATA_11_BITS:
-        case ETronDI_DEPTH_DATA_11_BITS_RAW:
-        case ETronDI_DEPTH_DATA_ILM_11_BITS_COMBINED_RECTIFY:
-        case ETronDI_DEPTH_DATA_11_BITS_COMBINED_RECTIFY:
-            return EtronDIImageType::DEPTH_11BITS;
-        case ETronDI_DEPTH_DATA_ILM_14_BITS:
-        case ETronDI_DEPTH_DATA_ILM_14_BITS_RAW:
-        case ETronDI_DEPTH_DATA_14_BITS:
-        case ETronDI_DEPTH_DATA_14_BITS_RAW:
-        case ETronDI_DEPTH_DATA_ILM_14_BITS_COMBINED_RECTIFY:
+	static EtronDIImageType::Value DepthDataTypeToDepthImageType(WORD dataType)
+	{
+		switch (dataType)
+		{
+		case ETronDI_DEPTH_DATA_8_BITS:
+		case ETronDI_DEPTH_DATA_8_BITS_RAW:
+		case ETronDI_DEPTH_DATA_ILM_8_BITS:
+		case ETronDI_DEPTH_DATA_ILM_8_BITS_RAW:
+		case ETronDI_DEPTH_DATA_SCALE_DOWN_8_BITS:
+		case ETronDI_DEPTH_DATA_SCALE_DOWN_8_BITS_RAW:
+		case ETronDI_DEPTH_DATA_SCALE_DOWN_ILM_8_BITS:
+		case ETronDI_DEPTH_DATA_SCALE_DOWN_ILM_8_BITS_RAW:
+			return EtronDIImageType::DEPTH_8BITS;
+		case ETronDI_DEPTH_DATA_8_BITS_x80:
+		case ETronDI_DEPTH_DATA_8_BITS_x80_RAW:
+		case ETronDI_DEPTH_DATA_ILM_8_BITS_x80:
+		case ETronDI_DEPTH_DATA_ILM_8_BITS_x80_RAW:
+		case ETronDI_DEPTH_DATA_SCALE_DOWN_8_BITS_x80:
+		case ETronDI_DEPTH_DATA_SCALE_DOWN_8_BITS_x80_RAW:
+		case ETronDI_DEPTH_DATA_SCALE_DOWN_ILM_8_BITS_x80:
+		case ETronDI_DEPTH_DATA_SCALE_DOWN_ILM_8_BITS_x80_RAW:
+			return EtronDIImageType::DEPTH_8BITS_0x80;
+		case ETronDI_DEPTH_DATA_11_BITS:
+		case ETronDI_DEPTH_DATA_11_BITS_RAW:
+		case ETronDI_DEPTH_DATA_11_BITS_COMBINED_RECTIFY:
+		case ETronDI_DEPTH_DATA_ILM_11_BITS:
+		case ETronDI_DEPTH_DATA_ILM_11_BITS_RAW:
+		case ETronDI_DEPTH_DATA_ILM_11_BITS_COMBINED_RECTIFY:
+		case ETronDI_DEPTH_DATA_SCALE_DOWN_11_BITS:
+		case ETronDI_DEPTH_DATA_SCALE_DOWN_11_BITS_RAW:
+		case ETronDI_DEPTH_DATA_SCALE_DOWN_11_BITS_COMBINED_RECTIFY:
+		case ETronDI_DEPTH_DATA_SCALE_DOWN_ILM_11_BITS:
+		case ETronDI_DEPTH_DATA_SCALE_DOWN_ILM_11_BITS_RAW:
+		case ETronDI_DEPTH_DATA_SCALE_DOWN_ILM_11_BITS_COMBINED_RECTIFY:
+			return EtronDIImageType::DEPTH_11BITS;
+		case ETronDI_DEPTH_DATA_14_BITS:
+		case ETronDI_DEPTH_DATA_14_BITS_RAW:
 		case ETronDI_DEPTH_DATA_14_BITS_COMBINED_RECTIFY:
-            return EtronDIImageType::DEPTH_14BITS;
-        default: return EtronDIImageType::IMAGE_UNKNOWN;
-        }
-    }
+		case ETronDI_DEPTH_DATA_ILM_14_BITS:
+		case ETronDI_DEPTH_DATA_ILM_14_BITS_RAW:
+		case ETronDI_DEPTH_DATA_ILM_14_BITS_COMBINED_RECTIFY:
+		case ETronDI_DEPTH_DATA_SCALE_DOWN_14_BITS:
+		case ETronDI_DEPTH_DATA_SCALE_DOWN_14_BITS_RAW:
+		case ETronDI_DEPTH_DATA_SCALE_DOWN_14_BITS_COMBINED_RECTIFY:
+		case ETronDI_DEPTH_DATA_SCALE_DOWN_ILM_14_BITS:
+		case ETronDI_DEPTH_DATA_SCALE_DOWN_ILM_14_BITS_RAW:
+		case ETronDI_DEPTH_DATA_SCALE_DOWN_ILM_14_BITS_COMBINED_RECTIFY:
+			return EtronDIImageType::DEPTH_14BITS;
+		default: return EtronDIImageType::IMAGE_UNKNOWN;
+		}
+	}
 };
 
 struct EtronDIDepthSwitch
@@ -1114,6 +1165,18 @@ int ETRONDI_API EtronDI_OpenDevice( void* pHandleEtronDI, PDEVSELINFO pDevSelInf
                                     int colorStreamIndex, int depthStreamIndex, int depthStreamSwitch, int iFps,
 	                                EtronDI_ImgCallbackFn callbackFn, void* pCallbackParam, int pid = -1 );
 
+/*! \fn int EtronDI_GetColorImage(void *pHandleEtronDI, PDEVSELINFO pDevSelInfo, BYTE *pBuf, unsigned long int *pImageSize, int *pSerial)
+	\brief get color image
+*/
+int ETRONDI_API EtronDI_GetColorImage(void *pHandleEtronDI, PDEVSELINFO pDevSelInfo,
+	BYTE *pBuf, unsigned long int *pImageSize, int *pSerial = NULL);
+
+/*! \fn int EtronDI_GetDepthImage(void *pHandleEtronDI, PDEVSELINFO pDevSelInfo, BYTE *pBuf, unsigned long int *pImageSize, int *pSerial)
+	\brief get depth image
+*/
+int ETRONDI_API EtronDI_GetDepthImage(void *pHandleEtronDI, PDEVSELINFO pDevSelInfo,
+	BYTE *pBuf, unsigned long int *pImageSize, int *pSerial = NULL, int nDepthDataType = 0);
+
 /*! \fn int EtronDI_CloseDevice(
 		void *pHandleEtronDI,
 		PDEVSELINFO pDevSelInfo)
@@ -1694,6 +1757,23 @@ int ETRONDI_API EtronDI_EdgePreServingFilter(void *pHandleEtronDI, PDEVSELINFO p
 /*! \fn int ETRONDI_API EtronDI_ApplyFilters(void *pHandleEtronDI, PDEVSELINFO pDevSelInfo, unsigned char* depthBuf, unsigned char* subDisparity, int bytesPerPixel, int width, int height, int sub_w, int sub_h, int threshold=64)
 */
 int ETRONDI_API EtronDI_ApplyFilters(void *pHandleEtronDI, PDEVSELINFO pDevSelInfo, unsigned char* depthBuf, unsigned char* subDisparity, int bytesPerPixel, int width, int height, int sub_w, int sub_h, int threshold=64);
+
+/*! \fn int ETRONDI_API EtronDI_EnableGPUAcceleration(void *pHandleEtronDI, PDEVSELINFO pDevSelInfo, bool enable)
+	\brief enable depth filter with GPU acceleration or not
+	\param pHandleEtronDI: the pointer to the initilized EtronDI SDK instance
+	\param pDevSelInfo: pointer of device select index
+	\param enable: true:enable, fales:diable
+	\return success: EtronDI_OK, others: see eSPDI_ErrCode.h
+*/
+int ETRONDI_API EtronDI_EnableGPUAcceleration(void *pHandleEtronDI, PDEVSELINFO pDevSelInfo, bool enable);
+
+/*! \fn char* ETRONDI_API EtronDI_GetDepthFilterVersion(void *pHandleEtronDI, PDEVSELINFO pDevSelInfo)
+	\brief get depth filter version
+	\param pHandleEtronDI	 the pointer to the initilized EtronDI SDK instance
+	\param pDevSelInfo	pointer of device select index
+	\return success: get version string, others: get N/A string
+*/
+ETRONDI_API char* EtronDI_GetDepthFilterVersion(void *pHandleEtronDI, PDEVSELINFO pDevSelInfo);
 
 /*! \fn int ETRONDI_API EtronDI_ResetFilters(void *pHandleEtronDI, PDEVSELINFO pDevSelInfo)
 */

@@ -24,7 +24,7 @@ typedef struct {
 } CameraOpenConfig;
 
 extern "C" {
-    CameraOpenConfig get_mode_config();
+    CameraOpenConfig get_mode_config(int);
     int get_depth_frame(BYTE* dataInOut, size_t bufInSize, int type);
     bool regenerate_palette(unsigned short zMin, unsigned short zFar);
     void reset_palette();

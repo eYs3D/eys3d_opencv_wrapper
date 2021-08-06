@@ -258,7 +258,7 @@ private:
     libeYs3D::sensors::SensorDataProducer::AppCallback mIMUDataCallback;
     
     static constexpr int kMaxFrameCount = 64; // 1 seconds @ 60FPS
-    static constexpr int kMaxIMUDataCount = (256);
+    static constexpr int kMaxIMUDataCount = (kMaxFrameCount << 2);
     CircularQueue<libeYs3D::video::Frame, kMaxFrameCount> mColorFrameQueue;
     CircularQueue<libeYs3D::video::Frame, kMaxFrameCount> mDepthFrameQueue;
     CircularQueue<libeYs3D::video::PCFrame, (kMaxFrameCount >> 1)> mPCFrameQueue;

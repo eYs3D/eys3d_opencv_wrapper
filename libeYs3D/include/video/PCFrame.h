@@ -39,7 +39,7 @@ public:
     std::vector<uint8_t, libeYs3D::devices::MemoryAllocator<uint8_t>> rgbDataVec;
     std::vector<float, libeYs3D::devices::MemoryAllocator<float>> xyzDataVec;
 #else
-	std::vector<uint8_t> drgbDataVec;
+    std::vector<uint8_t> drgbDataVec;
     std::vector<uint8_t> rgbDataVec;
     std::vector<float> xyzDataVec;
 #endif
@@ -61,6 +61,9 @@ public:
 
     int toString(char *buffer, int bufferLength) const;
     int toStringSimple(char *buffer, int bufferLength) const;
+#ifndef WIN32
+    int toStringSHA256(char *buffer, int bufferLength) const;
+#endif
     int toString(std::string &string) const;
     
     void clone(const PCFrame *pcFrame);

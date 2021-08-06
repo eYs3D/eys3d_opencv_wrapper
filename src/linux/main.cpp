@@ -583,7 +583,7 @@ int main (int argc, char** argv) {
                 cv::setOpenGlDrawCallback(example_wd.id, on_opengl, &backgroundTex);
                 cv::updateWindow(example_wd.id);
                 while(cv::getWindowProperty(example_wd.id, cv::WND_PROP_VISIBLE) >= 1) {
-                    cv::waitKey(30);
+                    cv::waitKey(1);
                 }
                 cout << "OpenGL example exit" << endl;
                 cv::setOpenGlDrawCallback(example_wd.id, 0, 0);
@@ -732,7 +732,7 @@ void preview_color_depth() {
         //image show
         cv::imshow(color_wd.id, color_rgb_img);
         cv::imshow(depth_wd.id, depth_rgb_img);
-        char input_key = cv::waitKey(30);
+        char input_key = cv::waitKey(1);
         color_palette_handle(input_key, count);
     }
     cout << "\nstop color streaming... " << endl;
@@ -885,7 +885,7 @@ void preview_all() {
         cv::imshow(grey_wd.id, color_gry_img);
         cv::imshow(canny_wd.id, color_cny_img);
 
-        char input_key = cv::waitKey(30);
+        char input_key = (char) cv::waitKey(1);
         color_palette_handle(input_key, count);
     }
     cout << "\nstop color streaming... " << endl;
@@ -1029,7 +1029,7 @@ void face_detect() {
         cv::imshow(depth_wd.id, depth_rgb_img);
 
 
-        char c = cv::waitKey(30);
+        char c = cv::waitKey(1);
         if (c == 27) {
             break;
         }
@@ -1199,7 +1199,7 @@ void face_mask_detect() {
         cv::imshow(depth_wd.id, depth_rgb_img);
 
 
-        char c = cv::waitKey(30);
+        char c = cv::waitKey(1);
         if (c == 27) {
             break;
         }
@@ -1234,6 +1234,10 @@ void show_settings_content(window_display &settings_wd) {
 void point_cloud_view() {
     cout << "\n\npoint_cloud_view item\n"<< endl;
     //prepare color, depth frame
+    int ret;
+    ret = init_device();
+    CameraOpenConfig config = get_mode_config(5);
+
     int color_size = config.colorWidth * config.colorHeight * 3;
     BYTE* color_frame = new BYTE [color_size];
     BYTE *color_frame_out = new BYTE[color_size];
@@ -1243,12 +1247,10 @@ void point_cloud_view() {
     float *depth_frame_out = new float[color_size];
     cout << "\nget_depth_handler size: " << depth_size << endl;
 
-    //eSPDI camera open
-    int ret;
-    ret = init_device();
     cout << "\ninit_device:"<< ret << endl;
     printf("\ncolorFormat %d, colorWidth:%d, colorHeight:%d, fps:%d, depthWidth:%d, depthHeight:%d, videoMode:%d\n",
            config.colorFormat, config.colorWidth, config.colorHeight, config.fps, config.depthWidth, config.depthHeight, config.videoMode);
+    //eSPDI camera open
     ret = open_device(config);
     cout << "\nopen_device:"<< ret << endl;
 

@@ -24,6 +24,8 @@
 
 void initialize_debug_framework(const char *config_file);
 
+void deinitialize_debug_framework();
+
 void LOG_ERR_S(const char *TAG, const char *FMT, ...);
 #define LOG_ERR(TAG, FMT, ...)                                            \
     do    {                                                                 \

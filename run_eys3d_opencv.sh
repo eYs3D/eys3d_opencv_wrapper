@@ -4,6 +4,7 @@ ulimit -c unlimited
 ulimit unlimited
 export LD_LIBRARY_PATH=./../eSPDI:$LD_LIBRARY_PATH 
 export LD_LIBRARY_PATH=./../libeYs3D_linux/lib/:$LD_LIBRARY_PATH 
+export EYS3D_HOME=./../
 
 
 

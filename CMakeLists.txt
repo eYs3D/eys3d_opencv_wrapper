@@ -11,6 +11,9 @@ if(WINDOWS)
     add_definitions("$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++14")
     message(CMAKE_CURRENT_LIST_DIR:${CMAKE_CURRENT_LIST_DIR})
+    if(Support STREQUAL "opengl")
+        add_compile_definitions(SUPPORT_QT_OPENGL)
+    endif()
 else()
     set(CMAKE_FIND_DEBUG_MODE TRUE)
     set(CMAKE_DEBUG_TARGET_PROPERTIES TRUE)
@@ -136,9 +139,7 @@ if(WINDOWS)
             TARGETS eys3d_opencv
             RUNTIME DESTINATION ${CMAKE_BINARY_DIR}/x64
     )
-    file(COPY ModeConfig.db 
-            eSPDI_win64/lib/eSPDI_DM.dll  # This lib have merged tj lib in it.
-            eSPDI_win64/lib/turbojpeg.dll # FIXME: Need remove both linux and windows
+    file(COPY eSPDI_win64/lib/eSPDI_DM.dll  # This lib have merged tj lib in it.
             libeYs3D/lib/eys3d.dll
             DESTINATION ${CMAKE_BINARY_DIR}/x64/Release)
     add_custom_command(TARGET eys3d_opencv POST_BUILD
@@ -146,7 +147,7 @@ if(WINDOWS)
                            ${CMAKE_SOURCE_DIR}/asset $<TARGET_FILE_DIR:eys3d_opencv>/asset)
     add_custom_command(TARGET eys3d_opencv POST_BUILD
                        COMMAND ${CMAKE_COMMAND} -E copy_directory
-                           ${CMAKE_SOURCE_DIR}/cfg/ $<TARGET_FILE_DIR:eys3d_opencv>/cfg)
+                           ${CMAKE_SOURCE_DIR}/cfg/ $<TARGET_FILE_DIR:eys3d_opencv>/eYs3D/cfg)
     add_custom_command(TARGET eys3d_opencv POST_BUILD
                        COMMAND ${CMAKE_COMMAND} -E copy_directory
                            ${CMAKE_SOURCE_DIR}/opencv_libs/opencv-3.4.2_vc/share/OpenCV/haarcascades/ $<TARGET_FILE_DIR:eys3d_opencv>/haarcascades)
@@ -154,6 +155,7 @@ if(WINDOWS)
     file(COPY ${VTK_FILES} DESTINATION ${CMAKE_BINARY_DIR}/x64/Release)
     file(GLOB DLL_FILES   "${CMAKE_SOURCE_DIR}/opencv_libs/opencv-3.4.2_vc/lib/*.dll")
     file(COPY ${DLL_FILES} DESTINATION ${CMAKE_BINARY_DIR}/x64/Release)
+    file(COPY ModeConfig.db DESTINATION ${CMAKE_BINARY_DIR}/x64/Release/eYs3D/cfg)
 else()
     target_link_libraries(eys3d_opencv eys3d pthread ${UDEV_LIBRARIES} ${OpenCV_LIBS} ${DEPENDENCIES})
     install(

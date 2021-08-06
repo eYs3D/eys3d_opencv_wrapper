@@ -58,6 +58,8 @@ void get_process_name(uint32_t pid, char *procName, int length);
 int get_executable_path(char *path, int length, const char *log_tag);
 int get_executable_dir(char *dir, int length, const char *log_tag);
 
+int getenv_to_int(const char *env, int default_value);
+
 int create_directory(const char *dirPath, const char *log_tag);
 
 #if 0
@@ -72,7 +74,9 @@ int get_cpu_core_count();
 
 void get_time_YYYY_MM_DD_HH_MM_SS(int64_t timeMs, char* date, size_t length);
 
+#ifndef WIN32
 int get_model_name(const char *devPath, char *out, int length, const char *log_tag);
+#endif
 USB_PORT_TYPE get_usb_type(const char *devPath);
 
 #ifdef WIN32
@@ -84,3 +88,5 @@ int is_big_endian(void);
 char* dirname(char *path);
 int clock_gettime(int, struct timespec *tv);
 #endif
+void sha256_buffer(const void *buffer, size_t bufferLength,
+                   char *outputBuffer, size_t outputBufferLength);

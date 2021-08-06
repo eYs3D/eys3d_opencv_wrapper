@@ -28,6 +28,7 @@
 #include "video/video.h"
 #include "video/FrameProducer.h"
 #include "video/PCProducer.h"
+#include "video/DepthFrameProducer.h"
 #include "sensors/SensorDataProducer.h"
 #include "Constants.h"
 #include "utils.h"
@@ -71,6 +72,8 @@
 #define MAX_STREAM_INFO_COUNT (64)
 #define SERIAL_THRESHOLD (30)
 #define MAX_DEPTH_DISTANCE (16383)
+
+#define DEFAULT_DEPTH_ROI_PIXELS 20
 
 namespace libeYs3D    {
 
@@ -289,6 +292,8 @@ public:
 	int setHWRegister(unsigned short address, unsigned short nValue);
 	unsigned short getFWRegister(unsigned short address);
 	int setFWRegister(unsigned short address, unsigned short nValue);
+    unsigned short getSensorRegister(unsigned short address, SENSORMODE_INFO sensorMode, int slaveID);
+    int setSensorRegister(unsigned short address, unsigned short nValue, SENSORMODE_INFO sensorMode, int slaveID);
 
     virtual void release();
     virtual ~CameraDevice();
@@ -369,7 +374,7 @@ public:
     int mDepthROICenterPointY = 0;
     int mDepthROIBottomRightX = 0;
     int mDepthROIBottomRightY = 0;
-    int mDepthROIPixels = 20; // Default is 20
+    int mDepthROIPixels = DEFAULT_DEPTH_ROI_PIXELS; // Default is 20
 
     USB_PORT_TYPE mUsbPortType;
 
@@ -397,6 +402,8 @@ public:
     bool mBlockingRead;
     uint32_t mCameraDeviceState;
     bool mInterleaveModeEnabled;
+
+    bool mSupportingInterleave;
 
     // IMU
     IMUDevice *mIMUDevice = nullptr;

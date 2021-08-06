@@ -53,7 +53,6 @@ std::shared_ptr<libeYs3D::devices::FrameSetPipeline> pipeline;
 std::unique_ptr<ModeConfigOptions> mModeConfigOptions;
 ModeConfig::MODE_CONFIG mode_config;
 std::vector< ModeConfig::MODE_CONFIG > m_modeConfigs;
-//libeYs3D::video::DEPTH_RAW_DATA_TYPE depth_raw_data_type;
 int videoMode = 2;
 
 uint64_t gColorImgSize;
@@ -65,25 +64,21 @@ BYTE* color_frame = nullptr;
 BYTE* depth_frame = nullptr;
 BYTE *color_frame_out = nullptr;
 float *depth_frame_out = nullptr;
-int *zdTable = nullptr;
+uint16_t *zdTable = nullptr;
 
 HANDLE updatePCHandle, updateColorDepth;
 
 int gDefaultNear, gDefaultFar;
 
-#ifndef WIN32
+bool haveColor = true;
+bool haveDepth = true;
+bool useInterleaveMode = false;
+
 camera_open_config config = {
         0 , 1280 ,720 , 60 ,1280 ,720, 2
 };
-#else
-camera_open_config config = {
-        0 , 1280 ,720 , 5 ,640 ,720, 2
-};
-#endif
 
 libeYs3D::video::DEPTH_RAW_DATA_TYPE depth_raw_data_type = libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_8_BITS;
-
-#define SUPPORT_QT_OPENGL
 
 #ifdef SUPPORT_QT_OPENGL
     int mSupport_QT_OpenGL = 1;
@@ -91,90 +86,285 @@ libeYs3D::video::DEPTH_RAW_DATA_TYPE depth_raw_data_type = libeYs3D::video::DEPT
     int mSupport_QT_OpenGL = 0;
 #endif
 
-//void config_mode(int color_index, int depth_index, int depth_raw_index, int color_fps_index)
-void config_mode(int mode_index, int depth_raw_index, int color_fps_index)
+static void frameset_reader(libeYs3D::devices::FrameSetPipeline *pipeline);
+static bool color_image_callback(const libeYs3D::video::Frame* frame);
+static bool depth_image_callback(const libeYs3D::video::Frame* frame);
+static bool pc_frame_callback(const libeYs3D::video::PCFrame *pcFrame);
+
+void config_mode(int pif)
 {
-	int i;
+	int i, mode_index;
+	int depth_raw_index = 0, color_fps_index = 0, depth_fps_index = 0;
 	mModeConfigOptions = device->getModeConfigOptions();
 	m_modeConfigs = mModeConfigOptions->GetModes();
+	CameraDeviceInfo mCameraDeviceInfo;
+	mCameraDeviceInfo = device->getCameraDeviceInfo();
 	printf("mode count = %d\n", m_modeConfigs.size());
 	for(i = 0; i < m_modeConfigs.size(); i++)
 		printf("[%d]", m_modeConfigs[i].iMode);
 	printf("\n");
+	for(i = m_modeConfigs.size() - 1; i >= 0; i--){
+		mode_index = i;
+		if(m_modeConfigs[mode_index].iMode == pif)
+			break;
+	}
 	mode_index = (mode_index < 0 || mode_index >= m_modeConfigs.size()) ? 0 : mode_index;
-	//printf("index = %d\n", mModeConfigOptions->GetCurrentIndex());
-	printf("selected mode index = %d\n", m_modeConfigs[mode_index].iMode);
+	printf("selected PIF = %d\n", m_modeConfigs[mode_index].iMode);
 	mModeConfigOptions->SelectCurrentIndex(m_modeConfigs[mode_index].iMode);
 	mode_config = mModeConfigOptions->GetCurrentModeInfo();
+	haveColor = (mode_config.L_Resolution.Width > 0) ? true : false;
+	haveDepth = (mode_config.D_Resolution.Width > 0) ? true : false;
+	printf("haveColor=%d, haveDepth=%d\n", haveColor, haveDepth);
 	printf("iMode=%d, iUSB_Type=%d, iInterLeaveModeFPS=%d, bRectifyMode=%d\n"
 		  , mode_config.iMode, mode_config.iUSB_Type, mode_config.iInterLeaveModeFPS, mode_config.bRectifyMode);
 	printf("eDecodeType_L=%d, L_Resolution.Width=%d ,L_Resolution.Height=%d, D_Resolution.Width=%d, D_Resolution.Height=%d, vecDepthType=%d, vecColorFps=%d, vecDepthFps=%d\n"
 	      , mode_config.eDecodeType_L, mode_config.L_Resolution.Width, mode_config.L_Resolution.Height, mode_config.D_Resolution.Width, mode_config.D_Resolution.Height
-	      , mode_config.vecDepthType.at(0), mode_config.vecColorFps.at(0), mode_config.vecDepthFps.size());
+	      , (mode_config.vecDepthType.size() > 0) ? mode_config.vecDepthType.at(0) : 0, (haveColor) ? mode_config.vecColorFps.at(0) : 0, (haveDepth) ? mode_config.vecDepthFps.size() : 0);
 	printf("mode_config.vecDepthType.size()=%d\n", mode_config.vecDepthType.size());
-	depth_raw_index = (depth_raw_index < 0 || depth_raw_index >= mode_config.vecDepthType.size()) ? 0 : depth_raw_index;
-	//switch(mode_config.vecDepthType.at(0)){
-	switch(mode_config.vecDepthType.at(depth_raw_index)){
-		case 8: depth_raw_data_type = libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_8_BITS;
-		        break;
-		case 11:depth_raw_data_type = libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_11_BITS;
-		        break;
-		case 14:depth_raw_data_type = libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_14_BITS;
-		        break;
+	config.depthHeight = mode_config.D_Resolution.Height;
+	if(mode_config.vecDepthType.size() == 0)
+		depth_raw_data_type = libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_OFF_RAW;
+	else{
+		depth_raw_index = (depth_raw_index < 0 || depth_raw_index >= mode_config.vecDepthType.size()) ? 0 : depth_raw_index;
+		switch(mode_config.vecDepthType.at(depth_raw_index)){
+			case 8: depth_raw_data_type = libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_8_BITS;			
+			        switch (depth_raw_data_type){
+						case libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_8_BITS:
+						case libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_8_BITS_RAW:
+						case libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_ILM_8_BITS:
+						case libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_ILM_8_BITS_RAW:
+							depth_raw_data_type = mode_config.bRectifyMode ? libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_8_BITS : libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_8_BITS_RAW; 
+							break;
+						case libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_8_BITS_x80:
+						case libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_8_BITS_x80_RAW:
+						case libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_ILM_8_BITS_x80:
+						case libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_ILM_8_BITS_x80_RAW:
+							depth_raw_data_type = mode_config.bRectifyMode ? libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_8_BITS_x80 : libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_8_BITS_x80_RAW; break;
+					}
+					break;
+			case 11:
+					depth_raw_data_type = libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_11_BITS;
+					switch (depth_raw_data_type){
+						case libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_11_BITS:
+						case libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_11_BITS_RAW:
+						case libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_11_BITS_COMBINED_RECTIFY:
+						case libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_ILM_11_BITS:
+						case libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_ILM_11_BITS_RAW:
+						case libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_ILM_11_BITS_COMBINED_RECTIFY:
+							depth_raw_data_type = mode_config.bRectifyMode ? libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_11_BITS : libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_11_BITS_RAW;  break;
+					}
+					if(mCameraDeviceInfo.devInfo.wPID == 0x0120 && config.depthHeight == 360)
+					{
+						depth_raw_data_type = libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_SCALE_DOWN_11_BITS;
+					}
+					else
+					{
+						depth_raw_data_type = libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_11_BITS;
+					}
+			        break;
+			case 14:
+					depth_raw_data_type = libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_14_BITS;
+					switch (depth_raw_data_type){
+						case libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_14_BITS:
+						case libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_14_BITS_RAW:
+						case libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_14_BITS_COMBINED_RECTIFY:
+						case libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_ILM_14_BITS:
+						case libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_ILM_14_BITS_RAW:
+						case libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_ILM_14_BITS_COMBINED_RECTIFY:
+							depth_raw_data_type = mode_config.bRectifyMode ? libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_14_BITS : libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_14_BITS_RAW;  break;
+					}
+					if(mCameraDeviceInfo.devInfo.wPID == 0x0120 && config.depthHeight == 360)
+					{
+						depth_raw_data_type = libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_SCALE_DOWN_14_BITS;
+					}
+					else
+					{
+						depth_raw_data_type = libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_14_BITS;
+					}
+			        break;
+			default:
+					depth_raw_data_type = mode_config.bRectifyMode ? libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_DEFAULT : libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_OFF_RECTIFY;  break;
+		}
 	}
-	config.colorFormat = mode_config.eDecodeType_L;
+	config.colorFormat = mode_config.eDecodeType_L == ModeConfig::MODE_CONFIG::YUYV? libeYs3D::video::COLOR_RAW_DATA_YUY2 : libeYs3D::video::COLOR_RAW_DATA_MJPG;
 	config.colorWidth = mode_config.L_Resolution.Width;
 	config.colorHeight = mode_config.L_Resolution.Height;
 	config.depthWidth = mode_config.D_Resolution.Width;
 	config.depthHeight = mode_config.D_Resolution.Height;
+	config.videoMode = depth_raw_data_type;
 	printf("vecColorFps.size()=%d, vecDepthFps.size()=%d\n", mode_config.vecColorFps.size(), mode_config.vecDepthFps.size());
 	printf("vecColorFps=");
 	for(i = 0; i < mode_config.vecColorFps.size(); i++)
 		printf("[%d]", mode_config.vecColorFps.at(i));
 	printf("\n");
-	color_fps_index = (color_fps_index < 0 || color_fps_index >= mode_config.vecColorFps.size()) ? 0 : color_fps_index;
-	config.fps = mode_config.vecColorFps.at(color_fps_index);
+	if(haveColor){
+		if (mode_config.iInterLeaveModeFPS > 0) {
+			for ( i = mode_config.vecColorFps.size() - 1 ; i >= 0 ; i--){
+				if (mode_config.vecColorFps.at(i) == mode_config.iInterLeaveModeFPS){
+					color_fps_index = i;
+					break;
+				}
+			}
+		}
+		color_fps_index = (color_fps_index < 0 || color_fps_index >= mode_config.vecColorFps.size()) ? 0 : color_fps_index;
+		config.fps = mode_config.vecColorFps.at(color_fps_index);
+	}
+	else if(haveDepth){
+		if (mode_config.iInterLeaveModeFPS > 0) {
+			for ( i = mode_config.vecDepthFps.size() - 1 ; i >= 0 ; i--){
+				if (mode_config.vecDepthFps.at(i) == mode_config.iInterLeaveModeFPS){
+					depth_fps_index = i;
+					break;
+				}
+			}
+		}
+		depth_fps_index = (depth_fps_index < 0 || depth_fps_index >= mode_config.vecDepthFps.size()) ? 0 : depth_fps_index;
+		config.fps = mode_config.vecDepthFps.at(depth_fps_index);
+	}
+	if(mode_config.iInterLeaveModeFPS == config.fps)
+		useInterleaveMode = true;
+	else
+		useInterleaveMode = false;
 	printf("vecDepthFps=");
 	for(i = 0; i < mode_config.vecDepthFps.size(); i++)
 		printf("[%d]", mode_config.vecDepthFps.at(i));
 	printf("\n");
-	/*std::vector<ETRONDI_STREAM_INFO> mColorStreamInfo = device->getColorStreamInfo();
-	std::vector<ETRONDI_STREAM_INFO> mDepthStreamInfo = device->getDepthStreamInfo();
-	printf("mColorStreamInfo.size() = %d, mDepthStreamInfo.size() = %d\n", mColorStreamInfo.size(), mDepthStreamInfo.size());
-	auto it = mColorStreamInfo.begin();
-	for(i = 0; it != mColorStreamInfo.end(); ++it, i++)    {
-		if(i == color_index)
-			break;
-	}
-	config.colorFormat = (*it).bFormatMJPG;
-	config.colorWidth = (*it).nWidth;
-	config.colorHeight = (*it).nHeight;*/
-    /*it = mDepthStreamInfo.begin();
-	for(i = 0; it != mDepthStreamInfo.end(); ++it, i++)    {
-		if(i == depth_index)
-			break;
-	}
-	config.depthWidth = (*it).nWidth;
-	config.depthHeight = (*it).nHeight;*/
 
-	printf("config: {%d, %d, %d, %d, %d, %d, %d} depth_raw_data_type=%d (%d, %d, %d)\n", config.colorFormat, config.colorWidth, 
+	printf("config: {%d, %d, %d, %d, %d, %d, %d} depth_raw_data_type=%d (%d, %d, %d, %d, %d)\n", config.colorFormat, config.colorWidth, 
 		config.colorHeight, config.fps, config.depthWidth, config.depthHeight, config.videoMode, depth_raw_data_type, 
 		libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_8_BITS,
 		libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_11_BITS,
-		libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_14_BITS);
+		libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_SCALE_DOWN_11_BITS,
+		libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_14_BITS,
+		libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_SCALE_DOWN_14_BITS);
 }
 
-void config_mode()
-{
-	config_mode(0, 0, 0);
+void init_device(){
+	LOG_INFO(LOG_TAG, "Starting EYS3DSystem...");
+	if(eYs3DSystem == nullptr)
+		eYs3DSystem = EYS3DSystem::getEYS3DSystem();
+	if(device == nullptr)
+    	device = eYs3DSystem->getCameraDevice(0);
+	if(!device)    {
+        LOG_INFO(LOG_TAG, "Unable to find any camera devices...");
+    }
+}
+
+int open_device(bool is_point_cloud){
+	if(!device)
+		return ETronDI_NoDevice;
+	int ret;
+	//prepare color, depth frame
+	config_mode(1);
+    printf("\ncolorFormat %d, colorWidth:%d, colorHeight:%d, fps:%d, depthWidth:%d, depthHeight:%d, videoMode:%d\n",
+           config.colorFormat, config.colorWidth, config.colorHeight, config.fps, config.depthWidth, config.depthHeight, config.videoMode);
+	int pcl_depth_size = config.depthWidth * config.depthHeight * 3 * 2 * sizeof(float);
+	int pcl_color_size = config.colorWidth * config.colorHeight * 3 * sizeof(BYTE); 
+
+    int color_size = config.colorWidth * config.colorHeight * 3;
+    if(color_frame == nullptr)
+    	color_frame = new BYTE [color_size];
+    cout << "\ncolor_frame size: " << color_size << endl;
+    int depth_size = config.depthWidth * config.depthHeight * 3 * 2;
+    if(depth_frame == nullptr)
+    	depth_frame = new BYTE [depth_size];
+    cout << "\nget_depth_handler size: " << depth_size << endl;
+    if(zdTable == nullptr)
+    	zdTable = new uint16_t [depth_size];
+    if(is_point_cloud){
+		if(color_frame_out == nullptr)
+			color_frame_out = new BYTE[pcl_color_size];
+		if(depth_frame_out == nullptr)
+			depth_frame_out = new float[pcl_depth_size];
+		updatePCHandle = CreateEvent(NULL, TRUE, FALSE, NULL);
+    }
+	printf("\n\nEnabling device stream...\n");
+	printf("open_device: config.videoMode = %d (%d bits)\n", config.videoMode, 
+	         (config.videoMode == libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_8_BITS) ? 8 : 
+	         ((config.videoMode == libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_11_BITS | libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_SCALE_DOWN_11_BITS) ? 11 : 
+	         ((config.videoMode == libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_14_BITS | libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_SCALE_DOWN_14_BITS) ? 14 : 0)));
+	if(is_point_cloud){
+			ret = device->initStream((libeYs3D::video::COLOR_RAW_DATA_TYPE)config.colorFormat,
+	         config.colorWidth, config.colorHeight, config.fps, 
+	         (libeYs3D::video::DEPTH_RAW_DATA_TYPE)config.videoMode,
+	         config.depthWidth, config.depthHeight,
+	         DEPTH_IMG_COLORFUL_TRANSFER,
+	         IMAGE_SN_SYNC,
+	         0, // rectifyLogIndex
+	         nullptr,
+	         nullptr,
+	         pc_frame_callback);
+	}
+	else{
+		ret = device->initStream((libeYs3D::video::COLOR_RAW_DATA_TYPE)config.colorFormat,
+		         config.colorWidth, config.colorHeight, config.fps, 
+		         (libeYs3D::video::DEPTH_RAW_DATA_TYPE)config.videoMode,
+		         config.depthWidth, config.depthHeight,
+		         DEPTH_IMG_COLORFUL_TRANSFER,
+		         IMAGE_SN_SYNC,
+		         0, // rectifyLogIndex
+		         color_image_callback,
+		         depth_image_callback,
+		         nullptr);
+	}
+	if(ret == ETronDI_OK){
+		device->enableStream();
+		printf("\n\nDevice stream enabled\n");
+		gDefaultNear = device->mZDTableInfo.nZDTableMaxNear;
+		gDefaultFar = device->mZDTableInfo.nZDTableMaxFar;
+		device->enableInterleaveMode(useInterleaveMode);
+		printf("InterleaveMode = %s", (useInterleaveMode) ? "true" : "false");
+	}
+	return ret;
+
+}
+
+void close_device(bool is_point_cloud){
+	cout << "\nstop color streaming... " << endl;
+    //destroy and release
+    cv::destroyAllWindows();
+#if 0
+    if (color_frame)
+        delete color_frame;
+    if (depth_frame)
+        delete depth_frame;
+    if (zdTable)
+        delete zdTable;
+	if(is_point_cloud){
+	    if (color_frame_out) delete [] color_frame_out;
+	    if (depth_frame_out) delete [] depth_frame_out;
+	}
+#endif
+    cout << "\nclose_device:"<< endl;
+	while (1) {
+		Sleep(1);
+		if (!device) {
+			printf("doesn't need to CloseDevice()!\n");
+			break;
+
+		}
+		device->closeStream();
+		break;
+	}
+}
+
+void release_device(){
+    cout << "\nrelease_device:"<< endl;
+	if (nullptr != device.get()) {
+		delete device.get();
+		device = nullptr;
+
+	}
+	if (nullptr != eYs3DSystem.get()) {
+		delete eYs3DSystem.get();
+		eYs3DSystem == nullptr;
+	}
 }
 
 static void frameset_reader(libeYs3D::devices::FrameSetPipeline *pipeline)     {
     libeYs3D::video::FrameSet frameSet;
     char buffer[1024];
     libeYs3D::devices::FrameSetPipeline::RESULT ret;
-    //static int64_t lastSerialNumber = 0, c = -1;
-    printf("test\n");
     
     while(true)    {
         ret = pipeline->waitForFrameSet(&frameSet);
@@ -194,10 +384,6 @@ static void frameset_reader(libeYs3D::devices::FrameSetPipeline *pipeline)     {
             //frameSet.pcFrame.toStringSimple(buffer, sizeof(buffer));
             //LOG_INFO(LOG_TAG, "[# PC #] %s", buffer);
         //}
-        //if(frameSet.colorFrame.serialNumber - lastSerialNumber > 1)
-        //	c++;
-        //LOG_INFO(LOG_TAG, "Drop frame count = %d (%d->%d)", c, lastSerialNumber, frameSet.colorFrame.serialNumber);
-        //lastSerialNumber = frameSet.colorFrame.serialNumber;
 #endif
 
 #if 0
@@ -221,9 +407,6 @@ static bool color_image_callback(const libeYs3D::video::Frame* frame)    {
     static int64_t filteringTime = 0ll;
 
 	memcpy(color_frame, frame->rgbVec.data(), frame->rgbVec.size() * sizeof(uint8_t));
-    //for (int i = 0; i < frame->rgbVec.size(); i++) {
-    //    color_frame[i] = frame->rgbVec[i];
-    //}
 
 #if 1
     //if(frame->serialNumber > 0XFFFC)
@@ -263,14 +446,8 @@ static bool depth_image_callback(const libeYs3D::video::Frame* frame)    {
     static int64_t transcodingTime = 0ll;
     static int64_t filteringTime = 0ll;
     
-    //printf("depth_size = %d, frame_size=%d\n", config.depthWidth * config.depthHeight * 8, frame->rgbVec.size());
 	memcpy(depth_frame, frame->rgbVec.data(), frame->rgbVec.size() * sizeof(uint8_t));
 	memcpy(zdTable, frame->zdDepthVec.data(), frame->zdDepthVec.size() * sizeof(uint16_t));
-	//gDepthSerial = frame->serialNumber;
-    //for (int i = 0; i < frame->rgbVec.size(); i++) {
-    //    depth_frame[i] = frame->rgbVec[i];
-    //}
-	
 
 #if 1
     //if(frame->serialNumber > 0XFFFC)
@@ -310,24 +487,11 @@ static bool pc_frame_callback(const libeYs3D::video::PCFrame *pcFrame)    {
     static int64_t time = 0ll;
     static int64_t transcodingTime = 0ll;
 
-    //int pcl_depth_size = config.depthWidth * config.depthHeight * 3 * sizeof(float);
-    //int pcl_color_size = config.colorWidth * config.colorHeight * 8 * sizeof(BYTE);
-	//printf("pcl_color_size = %d/%d, pcl_depth_size = %d/%d\n", pcl_color_size, pcFrame->rgbDataVec.size(), pcl_depth_size, pcFrame->xyzDataVec.size());
-	
 	ResetEvent(updatePCHandle);
-	//printf("pcFrame->rgbDataVec.size() = %d, ", pcFrame->rgbDataVec.size());
-	//printf("pcFrame->xyzDataVec.size() = %d\n", pcFrame->xyzDataVec.size());
-    for (int i = 0; i < pcFrame->rgbDataVec.size(); i+=3) {
-        color_frame_out[i] = pcFrame->rgbDataVec[i+2];
-        color_frame_out[i+1] = pcFrame->rgbDataVec[i+1];
-        color_frame_out[i+2] = pcFrame->rgbDataVec[i];
-    }
+    memcpy(color_frame_out, pcFrame->rgbDataVec.data(), pcFrame->rgbDataVec.size() * sizeof(uint8_t));    
 	memcpy(depth_frame_out, pcFrame->xyzDataVec.data(), pcFrame->xyzDataVec.size() * sizeof(float));    
 	SetEvent(updatePCHandle);
-    //for (int i = 0; i < pcFrame->xyzDataVec.size(); i++) {
-    //    depth_frame_out[i] = pcFrame->xyzDataVec[i];
-    //}
-    
+
 #if 1
     //if(pcFrame->serialNumber > 0XFFFC)
         //LOG_INFO(LOG_TAG, "[# PC #] pc_image_callback: S/N=%" PRIu32 "", pcFrame->serialNumber);
@@ -370,44 +534,34 @@ WORD get_depth_by_coordinate(int x, int y)
 
 void ir_callback(int position, void*) {
     cout << "\n\nir_callback position:"<< position << endl;
-    //setupIR(position);
     device->setupIR(position);
 }
 
 void ae_callback(int position, void*) {
     cout << "\n\nae_callback position:"<< position << endl;
     if (position == 0) {
-        //cout << "\n\ndisable_AE ret:"<< disable_AE() << endl;
-        cout << "\n\ndisable_AE ret:"<< device->setCameraDevicePropertyValue(libeYs3D::devices::CameraDeviceProperties::CAMERA_PROPERTY::AUTO_EXPOSURE, 2) << endl;
+        cout << "\n\ndisable_AE ret:"<< device->setCameraDevicePropertyValue(libeYs3D::devices::CameraDeviceProperties::CAMERA_PROPERTY::AUTO_EXPOSURE, 0) << endl;
     } else {
-        //cout << "\n\nenable_AE ret:"<< enable_AE() << endl;
         cout << "\n\nenable_AE ret:"<< device->setCameraDevicePropertyValue(libeYs3D::devices::CameraDeviceProperties::CAMERA_PROPERTY::AUTO_EXPOSURE, 1) << endl;
     }
     struct libeYs3D::devices::CameraDeviceProperties::CameraPropertyItem status;
     status = device->getCameraDeviceProperty(libeYs3D::devices::CameraDeviceProperties::CAMERA_PROPERTY::AUTO_EXPOSURE);
-    //cout << "\n\nget ae status:"<< ((get_AE_status() == 0) ? "enable" : "disable") << endl;// 0: enable; 1: disable
-    //cout << "\n\nget ae status:"<< ((status.nValue == 0) ? "enable" : "disable") << endl;// 0: enable; 1: disable
-    cout << "\n\nget ae status (Support, Valid, Value): ("<< status.bSupport << "," << status.bValid << "," << status.nValue << ")" << endl;// 0: enable; 1: disable
+    cout << "\n\nget ae status (Support, Valid, Value): ("<< status.bSupport << "," << status.bValid << "," << status.nValue << ") =>" << ((status.nValue == 1) ? "enable" : "disable") << endl;// 1: enable; 0: disable
 }
 
 void awb_callback(int position, void*) {
 	struct libeYs3D::devices::CameraDeviceProperties::CameraPropertyItem status;
     cout << "\n\nawb_callback position:"<< position << endl;
     if (position == 0) {
-        //cout << "\n\ndisable_AWB ret:"<< disable_AWB() << endl;
-        cout << "\n\ndisable_AWB ret:"<< device->setCameraDevicePropertyValue(libeYs3D::devices::CameraDeviceProperties::CAMERA_PROPERTY::AUTO_WHITE_BLANCE, 2) << endl;
+        cout << "\n\ndisable_AWB ret:"<< device->setCameraDevicePropertyValue(libeYs3D::devices::CameraDeviceProperties::CAMERA_PROPERTY::AUTO_WHITE_BLANCE, 0) << endl;
         status = device->getCameraDeviceProperty(libeYs3D::devices::CameraDeviceProperties::CAMERA_PROPERTY::WHITE_BLANCE_TEMPERATURE);
         int temperature = status.nValue;
         device->setCameraDevicePropertyValue(libeYs3D::devices::CameraDeviceProperties::CAMERA_PROPERTY::WHITE_BLANCE_TEMPERATURE, temperature);
     } else {
-        //cout << "\n\nenable_AWB ret:"<< enable_AWB() << endl;
         cout << "\n\nenable_AWB ret:"<< device->setCameraDevicePropertyValue(libeYs3D::devices::CameraDeviceProperties::CAMERA_PROPERTY::AUTO_WHITE_BLANCE, 1) << endl;
     }
 	status = device->getCameraDeviceProperty(libeYs3D::devices::CameraDeviceProperties::CAMERA_PROPERTY::AUTO_WHITE_BLANCE);
-    //cout << "\n\nget awb status:"<< ((get_AWB_status() == 0) ? "enable" : "disable") << endl;// 0: enable; 1: disable
-	//cout << "\n\nget awb status:"<< ((status.nValue == 0) ? "enable" : "disable") << endl;// 0: enable; 1: disable
-	//cout << "\n\nget awb status:"<< status.nValue << endl;// 0: enable; 1: disable
-	cout << "\n\nget awb status (Support, Valid, Value): ("<< status.bSupport << "," << status.bValid << "," << status.nValue << ")" << endl;// 0: enable; 1: disable
+    cout << "\n\nget awb status (Support, Valid, Value): ("<< status.bSupport << "," << status.bValid << "," << status.nValue << ") =>" << ((status.nValue == 1) ? "enable" : "disable") << endl;// 1: enable; 0: disable
 }
 
 void mouse_callback (int event, int x, int y, int flag, void* param) {
@@ -449,13 +603,11 @@ void color_palette_handle (char input_key, int &count) {
             switch (item_input) {
                 case 'Y':
                 case 'y':
-                    //reset_palette();
 				    LOG_INFO(LOG_TAG, "regenerate_palette n:%d f:%d", gDefaultNear, gDefaultFar);
 					device->setDepthOfField(gDefaultNear, gDefaultFar);
                     break;
                 case 'N':
                 case 'n':
-                    //cout << "\nGetZNear:" << GetZNear() << "GetZFar:" << GetZFar() << endl;
                     cout << "\nGetZNear:" << device->mZDTableInfo.nZDTableMaxNear << "GetZFar:" << device->mZDTableInfo.nZDTableMaxFar << endl;
                     break;
                 default:
@@ -476,11 +628,7 @@ void color_palette_handle (char input_key, int &count) {
     } else if (input_key == 'B' || input_key == 'b') {
         unsigned short near_input;
         unsigned short far_input;
-        //unsigned short zMin = getDefaultZNear();
-        //unsigned short zMin = 0;
         unsigned short zMin = gDefaultNear;
-        //unsigned short zFar = getDefaultZFar();
-        //unsigned short zFar = 1000;
         unsigned short zFar = 16384;
         cout << "\n\nDefault ZNear:" << zMin << endl;
         cout << "\n\nDefault ZFar:" << gDefaultFar << endl;
@@ -491,7 +639,6 @@ void color_palette_handle (char input_key, int &count) {
         if (near_input < zMin || near_input > zFar || far_input < zMin || far_input >= zFar) {
             cout << "\n\n!!error palette range!!" << endl;
         } else {
-            //regenerate_palette(near_input, far_input);
 		    LOG_INFO(LOG_TAG, "regenerate_palette n:%d f:%d", near_input, far_input);
 		    if (near_input >= 0 && far_input >= near_input && far_input < 16384)
 				device->setDepthOfField(near_input, far_input);
@@ -987,6 +1134,7 @@ int main (int argc, char** argv) {
         cin >> item_input;
     }
     cout << "Bye!"<< endl;
+    release_device();
     return 0;
 }
 
@@ -1007,6 +1155,14 @@ void show_menu() {
 }
 
 void preview_color_depth() {
+    init_device();
+
+    //eSPDI camera open
+    int ret = open_device(false);
+    cout << "\nopen_device:"<< ret << endl;
+    if(ret < 0)
+    	return;
+
     cout << "\n\npreview_color_depth item\n"<< endl;
     //prepare window
     window_display color_wd = {"color_wd", 640, 360, 0, 0};
@@ -1026,81 +1182,13 @@ void preview_color_depth() {
         cv::resizeWindow(depth_wd.id, depth_wd.width, depth_wd.height);
         cv::moveWindow(depth_wd.id, depth_wd.x, depth_wd.y);
     }
-	LOG_INFO(LOG_TAG, "Starting EYS3DSystem...");
-	eYs3DSystem = EYS3DSystem::getEYS3DSystem();
-    device = eYs3DSystem->getCameraDevice(0);
-	if(!device)    {
-        LOG_INFO(LOG_TAG, "Unable to find any camera devices...");
-        exit(-1);
-    }
-	config_mode();
-    printf("\ncolorFormat %d, colorWidth:%d, colorHeight:%d, fps:%d, depthWidth:%d, depthHeight:%d, videoMode:%d\n",
-           config.colorFormat, config.colorWidth, config.colorHeight, config.fps, config.depthWidth, config.depthHeight, config.videoMode);
-    //prepare color, depth frame
-    int color_size = config.colorWidth * config.colorHeight * 3;
-    BYTE* color_frame0 = new BYTE [color_size];
-    //BYTE* color_frame = new BYTE [color_size];
-    if(color_frame == nullptr)
-    	color_frame = new BYTE [color_size];
-    cout << "\ncolor_frame size: " << color_size << endl;
-    //int depth_size = config.depthWidth * config.depthHeight * 8;
-    int depth_size = config.depthWidth * config.depthHeight * 3;
-    //BYTE* depth_frame = new BYTE [depth_size];
-    if(depth_frame == nullptr)
-    	depth_frame = new BYTE [depth_size];
-    cout << "\nget_depth_handler size: " << depth_size << endl;
-    if(zdTable == nullptr)
-    	zdTable = new int [depth_size];
 
-    //eSPDI camera open
-    int ret;
-    //ret = init_device();
-    //cout << "\ninit_device:"<< ret << endl;
-    //ret = open_device(config);
-	printf("\n\nEnabling device stream...\n");
-#if 0
-	pipeline = device->initStreamFS((libeYs3D::video::COLOR_RAW_DATA_TYPE)config.colorFormat,
-	         config.colorWidth, config.colorHeight, config.fps, 
-	         depth_raw_data_type,
-	         config.depthWidth, config.depthHeight,
-	         (DEPTH_TRANSFER_CTRL)config.videoMode,
-	         IMAGE_SN_SYNC,
-	         0);
-	if(pipeline != nullptr){
-		base::async([&]() { frameset_reader(pipeline.get()); });
-		device->enableStream();
-		printf("\n\nDevice stream enabled\n");
-		gDefaultNear = device->mZDTableInfo.nZDTableMaxNear;
-		gDefaultFar = device->mZDTableInfo.nZDTableMaxFar;
-		updateColorDepth = CreateEvent(NULL, TRUE, FALSE, NULL);
-	}
-#else
-	ret = device->initStream((libeYs3D::video::COLOR_RAW_DATA_TYPE)config.colorFormat,
-	         config.colorWidth, config.colorHeight, config.fps, 
-	         depth_raw_data_type,
-	         config.depthWidth, config.depthHeight,
-	         (DEPTH_TRANSFER_CTRL)config.videoMode,
-	         IMAGE_SN_SYNC,
-	         0, // rectifyLogIndex
-	         color_image_callback,
-	         depth_image_callback,
-	         nullptr);
-	if(ret == ETronDI_OK){
-		device->enableStream();
-		printf("\n\nDevice stream enabled\n");
-		gDefaultNear = device->mZDTableInfo.nZDTableMaxNear;
-		gDefaultFar = device->mZDTableInfo.nZDTableMaxFar;
-	}
-    cout << "\nopen_device:"<< ret << endl;
-#endif
     window_display settings_wd = {"settings_wd", 640, 360, 0, 440};
     if (mSupport_QT_OpenGL) {
         //create IR Trackbar
-        //int ir_min = get_IR_min_value();
         libeYs3D::devices::IRProperty property = device->getIRProperty();
         int ir_min = property.getIRMin();
         int ir_max = property.getIRMax();
-        //cv::createTrackbar(SETTINGS_IR, color_wd.id, &ir_min, get_IR_max_value(), ir_callback, (void*)&color_wd);
         cv::createTrackbar(SETTINGS_IR, color_wd.id, &ir_min, ir_max, ir_callback, (void*)&color_wd);
         cv::setTrackbarPos(SETTINGS_IR, color_wd.id, 3);
         //create AE Trackbar
@@ -1113,7 +1201,6 @@ void preview_color_depth() {
         cv::setTrackbarPos(SETTINGS_AWB, color_wd.id, 1);
     } else {
         //show settings window white background
-        //cv::namedWindow(settings_wd.id, cv::WINDOW_AUTOSIZE);
         cv::namedWindow(settings_wd.id, cv::WINDOW_NORMAL);
         cv::moveWindow(settings_wd.id, settings_wd.x, settings_wd.y);
         cv::Mat white_image(settings_wd.height,settings_wd.width, CV_8UC3);
@@ -1144,85 +1231,48 @@ void preview_color_depth() {
 #endif
 
         //eSPDI camera get frame
-        //ret = get_color_frame(color_frame);
-		//ret = device->readColorFrame((BYTE*)color_frame, (uint64_t)2 * config.colorWidth * config.colorHeight, (uint64_t *)&gColorImgSize, (uint32_t *)&gColorSerial);
-        //save_file(color_frame, color_size, config.colorWidth, config.colorHeight, 1, true);
-        //int size=0, type;
-        //ret = tjpeg2yuv(color_frame,2 * config.colorWidth * config.colorHeight,&color_frame0, &size,&type);
-        //ret = tyuv2rgb(color_frame0,size, config.colorWidth, config.colorHeight, type,&color_frame,&size);
-
-        //if (ret != 0) {
-        //    cout << "\nget_color_frame failed:" << ret << endl;
-        //    continue;
-        //}
-        //ret = get_depth_frame(depth_frame, depth_size, 1);
-		//ret = device->readDepthFrame((BYTE*)depth_frame, (uint64_t)depth_size, (uint64_t *)&gDepthImgSize, (uint32_t *)&gDepthSerial);
-        //if (ret != 0) {
-        //    cout << "\nget_depth_frame failed:" << ret << endl;
-        //    continue;
-        //}
 		WaitForSingleObject(updateColorDepth, INFINITE);
         ResetEvent(updateColorDepth);
         //cvt to MAT
-        //cv::Mat color_bgr_img(cv::Size(config.colorWidth, config.colorHeight), CV_8UC3, (void*)color_frame, cv::Mat::AUTO_STEP);
-        cv::Mat color_rgb_img(cv::Size(config.colorWidth, config.colorHeight), CV_8UC3, (void*)color_frame, cv::Mat::AUTO_STEP);
-        //cv::Mat color_rgb_img;
-        //cv::cvtColor(color_bgr_img, color_rgb_img, cv::COLOR_RGB2BGR);
+        cv::Mat color_bgr_img(cv::Size(config.colorWidth, config.colorHeight), CV_8UC3, (void*)color_frame, cv::Mat::AUTO_STEP);
+        cv::Mat color_rgb_img;
+        cv::cvtColor(color_bgr_img, color_rgb_img, cv::COLOR_RGB2BGR);
+#if 0
         if (color_rgb_img.empty()) {
             cout << "\ncolor is empty " << endl;
             continue;
         }
+#endif
         cv::Mat depth_bgr_img(cv::Size(config.depthWidth, config.depthHeight), CV_8UC3, (void *) depth_frame,
                               cv::Mat::AUTO_STEP);
         cv::Mat depth_rgb_img;
         cv::cvtColor(depth_bgr_img, depth_rgb_img, cv::COLOR_RGB2BGR);
+#if 0
         if (depth_rgb_img.empty()) {
             cout << "\ndepth is empty " << endl;
             continue;
         }
+#endif
         //image show
-        cv::imshow(color_wd.id, color_rgb_img);
-        cv::imshow(depth_wd.id, depth_rgb_img);
+        if(haveColor)
+        	cv::imshow(color_wd.id, color_rgb_img);
+        if(haveDepth)
+        	cv::imshow(depth_wd.id, depth_rgb_img);
         char input_key = cv::waitKey(30);
         color_palette_handle(input_key, count);
     }
-    cout << "\nstop color streaming... " << endl;
-    //destroy and release
-    cv::destroyAllWindows();
-    if (color_frame)
-        delete color_frame;
-    if (color_frame0)
-        delete color_frame0;
-    if (depth_frame)
-        delete depth_frame;
-    if (zdTable)
-        delete zdTable;
-    cout << "\nclose_device:"<< endl;
-    //close_device();
-	while (1) {
-		Sleep(1);
-		if (!device) {
-			printf("doesn't need to CloseDevice()!\n");
-			break;
-
-		}
-		device->closeStream();
-		break;
-	}
-    cout << "\nrelease_device:"<< endl;
-    //release_device();
-	if (nullptr != device.get()) {
-		delete device.get();
-		device = nullptr;
-
-	}
-	if (nullptr != eYs3DSystem.get()) {
-		delete eYs3DSystem.get();
-		eYs3DSystem == nullptr;
-	}
+    close_device(false);
 }
 
 void preview_all() {
+    init_device();
+
+    //eSPDI camera open
+    int ret = open_device(false);
+    cout << "\nopen_device:"<< ret << endl;
+    if(ret < 0)
+    	return;
+
     cout << "\n\npreview_all item\n"<< endl;
     //prepare window
     window_display color_wd = {"color_wd", 640, 360, 0, 0};
@@ -1256,84 +1306,14 @@ void preview_all() {
         cv::resizeWindow(canny_wd.id, canny_wd.width, canny_wd.height);
         cv::moveWindow(canny_wd.id, canny_wd.x, canny_wd.y);
     }
-	LOG_INFO(LOG_TAG, "Starting EYS3DSystem...");
-	eYs3DSystem = EYS3DSystem::getEYS3DSystem();
-    device = eYs3DSystem->getCameraDevice(0);
-	if(!device)    {
-        LOG_INFO(LOG_TAG, "Unable to find any camera devices...");
-        exit(-1);
-    }
-	//config_mode(2, 1, 0);
-	config_mode();
-    printf("\ncolorFormat %d, colorWidth:%d, colorHeight:%d, fps:%d, depthWidth:%d, depthHeight:%d, videoMode:%d\n",
-           config.colorFormat, config.colorWidth, config.colorHeight, config.fps, config.depthWidth, config.depthHeight, config.videoMode);
-    //prepare color, depth frame
-    int color_size = config.colorWidth * config.colorHeight * 3;
-    BYTE* color_frame0 = new BYTE [color_size];
-    //BYTE* color_frame = new BYTE [color_size];
-    if(color_frame == nullptr)
-    	color_frame = new BYTE [color_size];
-    cout << "\ncolor_frame size: " << color_size << endl;
-    int depth_size = config.depthWidth * config.depthHeight * 3;
-    //int depth_size = config.depthWidth * config.depthHeight * 8;
-    //BYTE* depth_frame = new BYTE [depth_size];
-    if(depth_frame == nullptr)
-    	depth_frame = new BYTE [depth_size];
-    cout << "\nget_depth_handler size: " << depth_size << endl;
-    if(zdTable == nullptr)
-    	zdTable = new int [depth_size];
-    
-    //eSPDI camera open
-    int ret;
-    //ret = init_device();
-    //cout << "\ninit_device:"<< ret << endl;
-    //ret = open_device(config);
-	printf("\n\nEnabling device stream...\n");
-#if 0
-	pipeline = device->initStreamFS((libeYs3D::video::COLOR_RAW_DATA_TYPE)config.colorFormat,
-	         config.colorWidth, config.colorHeight, config.fps, 
-	         depth_raw_data_type,
-	         config.depthWidth, config.depthHeight,
-	         (DEPTH_TRANSFER_CTRL)config.videoMode,
-	         IMAGE_SN_SYNC,
-	         0);
-	if(pipeline != nullptr){
-		base::async([&]() { frameset_reader(pipeline.get()); });
-		device->enableStream();
-		printf("\n\nDevice stream enabled\n");
-		gDefaultNear = device->mZDTableInfo.nZDTableMaxNear;
-		gDefaultFar = device->mZDTableInfo.nZDTableMaxFar;
-		updateColorDepth = CreateEvent(NULL, TRUE, FALSE, NULL);
-	}
-#else
-	ret = device->initStream((libeYs3D::video::COLOR_RAW_DATA_TYPE)config.colorFormat,
-	         config.colorWidth, config.colorHeight, config.fps, 
-	         depth_raw_data_type,
-	         config.depthWidth, config.depthHeight,
-	         (DEPTH_TRANSFER_CTRL)config.videoMode,
-	         IMAGE_SN_SYNC,
-	         0, // rectifyLogIndex
-	         color_image_callback,
-	         depth_image_callback,
-	         nullptr);
-	if(ret == ETronDI_OK){
-		device->enableStream();
-		printf("\n\nDevice stream enabled\n");
-		gDefaultNear = device->mZDTableInfo.nZDTableMaxNear;
-		gDefaultFar = device->mZDTableInfo.nZDTableMaxFar;
-	}
-    cout << "\nopen_device:"<< ret << endl;
-#endif
 
     //show settings window white background
     window_display settings_wd = {"settings_wd", 320, 180, 1400, 0};
     if (mSupport_QT_OpenGL) {
         //create IR Trackbar
-        //int ir_min = get_IR_min_value();
         libeYs3D::devices::IRProperty property = device->getIRProperty();
         int ir_min = property.getIRMin();
         int ir_max = property.getIRMax();
-        //cv::createTrackbar(SETTINGS_IR, color_wd.id, &ir_min, get_IR_max_value(), ir_callback, (void*)&color_wd);
         cv::createTrackbar(SETTINGS_IR, color_wd.id, &ir_min, ir_max, ir_callback, (void*)&color_wd);
         cv::setTrackbarPos(SETTINGS_IR, color_wd.id, 3);
         //create AE Trackbar
@@ -1346,7 +1326,6 @@ void preview_all() {
         cv::setTrackbarPos(SETTINGS_AWB, color_wd.id, 1);
     } else {
         //show settings window white background
-        //cv::namedWindow(settings_wd.id, cv::WINDOW_AUTOSIZE);
         cv::namedWindow(settings_wd.id, cv::WINDOW_NORMAL);
         cv::moveWindow(settings_wd.id, settings_wd.x, settings_wd.y);
         cv::Mat white_image(settings_wd.height,settings_wd.width, CV_8UC3);
@@ -1380,93 +1359,70 @@ void preview_all() {
           && cv::getWindowProperty(settings_wd.id, cv::WND_PROP_AUTOSIZE) >= 0) {
 #endif
         //eSPDI camera get frame
-        //get_color_frame(color_frame);
-		//ret = device->readColorFrame((BYTE*)color_frame, (uint64_t)2 * config.colorWidth * config.colorHeight, (uint64_t *)&gColorImgSize, (uint32_t *)&gColorSerial);
-        //get_depth_frame(depth_frame, depth_size, 0);
-		//ret = device->readDepthFrame((BYTE*)depth_frame, (uint64_t)depth_size, (uint64_t *)&gDepthImgSize, (uint32_t *)&gDepthSerial);        
-        //int size=0, type;
-        //ret = tjpeg2yuv(color_frame,2 * config.colorWidth * config.colorHeight,&color_frame0, &size,&type);
-        //ret = tyuv2rgb(color_frame0,size, config.colorWidth, config.colorHeight, type,&color_frame,&size);
 		WaitForSingleObject(updateColorDepth, INFINITE);
         ResetEvent(updateColorDepth);
         //cvt to MAT
-        //cv::Mat color_bgr_img(cv::Size(config.colorWidth, config.colorHeight), CV_8UC3, (void*)color_frame, cv::Mat::AUTO_STEP);
-        //cv::Mat color_bgr_img(cv::Size(config.colorWidth, config.colorHeight), CV_8UC3, color_frame, cv::Mat::AUTO_STEP);
-        cv::Mat color_rgb_img(cv::Size(config.colorWidth, config.colorHeight), CV_8UC3, color_frame, cv::Mat::AUTO_STEP);
-        //cv::Mat color_rgb_img;
-        //cv::cvtColor(color_bgr_img, color_rgb_img, cv::COLOR_RGB2BGR);
+        cv::Mat color_bgr_img(cv::Size(config.colorWidth, config.colorHeight), CV_8UC3, (void*)color_frame, cv::Mat::AUTO_STEP);
+        cv::Mat color_rgb_img;
+        cv::cvtColor(color_bgr_img, color_rgb_img, cv::COLOR_RGB2BGR);
+#if 0
         if (color_rgb_img.empty()) {
             cout << "\ncolor is empty " << endl;
             continue;
         }
+#endif
         cv::Mat depth_bgr_img(cv::Size(config.depthWidth, config.depthHeight), CV_8UC3, (void *) depth_frame,
                               cv::Mat::AUTO_STEP);
         cv::Mat depth_rgb_img;
         cv::cvtColor(depth_bgr_img, depth_rgb_img, cv::COLOR_RGB2BGR);
+#if 0
         if (depth_rgb_img.empty()) {
             cout << "\ndepth is empty " << endl;
             continue;
         }
+#endif
 
         cv::Mat color_gry_img, color_cny_img;
         cv::cvtColor(color_rgb_img, color_gry_img, cv::COLOR_RGB2GRAY);
         cv::Canny(color_gry_img, color_cny_img, 10, 100, 3, true);
 
+#if 0
         if (color_gry_img.empty()) {
             cout << "\ngrey is empty " << endl;
             continue;
         }
+#endif
 
+#if 0
         if (color_cny_img.empty()) {
             cout << "\ncanny is empty " << endl;
             continue;
         }
+#endif
         //image show
-        cv::imshow(color_wd.id, color_rgb_img);
-        cv::imshow(depth_wd.id, depth_rgb_img);
-        cv::imshow(grey_wd.id, color_gry_img);
-        cv::imshow(canny_wd.id, color_cny_img);
+        if(haveColor){
+        	cv::imshow(color_wd.id, color_rgb_img);
+        	cv::imshow(grey_wd.id, color_gry_img);
+        	cv::imshow(canny_wd.id, color_cny_img);
+        }
+        if(haveDepth)
+        	cv::imshow(depth_wd.id, depth_rgb_img);
 
         char input_key = cv::waitKey(30);
         color_palette_handle(input_key, count);
     }
-    cout << "\nstop color streaming... " << endl;
-    //destroy and release
-    cv::destroyAllWindows();
-    if (color_frame)
-        delete color_frame;
-    if (color_frame0)
-        delete color_frame0;
-    if (depth_frame)
-        delete depth_frame;
-    if (zdTable)
-        delete zdTable;
-    cout << "\nclose_device:"<< endl;
-    //close_device();
-	while (1) {
-		Sleep(1);
-		if (!device) {
-			printf("doesn't need to CloseDevice()!\n");
-			break;
-
-		}
-		device->closeStream();
-		break;
-	}
-    cout << "\nrelease_device:"<< endl;
-    //release_device();
-	if (nullptr != device.get()) {
-		delete device.get();
-		device = nullptr;
-
-	}
-	if (nullptr != eYs3DSystem.get()) {
-		delete eYs3DSystem.get();
-		eYs3DSystem == nullptr;
-	}
+    close_device(false);
 }
 
 void face_detect() {
+	init_device();
+
+    //eSPDI camera open
+    int ret = open_device(false);
+    cout << "\nopen_device:"<< ret << endl;
+    if(ret < 0)
+    	return;
+
     cout << "\n\nface_detect item\n"<< endl;
     cv::CascadeClassifier face_cascade;
     cv::CascadeClassifier eyes_cascade;
@@ -1493,72 +1449,7 @@ void face_detect() {
     cv::resizeWindow(depth_wd.id, depth_wd.width, depth_wd.height);
     cv::moveWindow(depth_wd.id, depth_wd.x, depth_wd.y);
 
-	LOG_INFO(LOG_TAG, "Starting EYS3DSystem...");
-	eYs3DSystem = EYS3DSystem::getEYS3DSystem();
-    device = eYs3DSystem->getCameraDevice(0);
-	if(!device)    {
-        LOG_INFO(LOG_TAG, "Unable to find any camera devices...");
-        exit(-1);
-    }
-	config_mode();
-    printf("\ncolorFormat %d, colorWidth:%d, colorHeight:%d, fps:%d, depthWidth:%d, depthHeight:%d, videoMode:%d\n",
-           config.colorFormat, config.colorWidth, config.colorHeight, config.fps, config.depthWidth, config.depthHeight, config.videoMode);
-    //prepare color, depth frame
-    int color_size = config.colorWidth * config.colorHeight * 3;
-    BYTE* color_frame0 = new BYTE [color_size];
-    //BYTE* color_frame = new BYTE [color_size];
-    if(color_frame == nullptr)
-    	color_frame = new BYTE [color_size];
-    cout << "\ncolor_frame size: " << color_size << endl;
-    //int depth_size = config.depthWidth * config.depthHeight * 8;
-    int depth_size = config.depthWidth * config.depthHeight * 3;
-    //BYTE* depth_frame = new BYTE [depth_size];
-    if(depth_frame == nullptr)
-    	depth_frame = new BYTE [depth_size];
-    cout << "\nget_depth_handler size: " << depth_size << endl;
-    if(zdTable == nullptr)
-    	zdTable = new int [depth_size];
-
-    //eSPDI camera open
-    int ret;
-    //ret = init_device();
-    //cout << "\ninit_device:"<< ret << endl;
-    //ret = open_device(config);
-	printf("\n\nEnabling device stream...\n");
-#if 0
-	pipeline = device->initStreamFS((libeYs3D::video::COLOR_RAW_DATA_TYPE)config.colorFormat,
-	         config.colorWidth, config.colorHeight, config.fps, 
-	         depth_raw_data_type,
-	         config.depthWidth, config.depthHeight,
-	         (DEPTH_TRANSFER_CTRL)config.videoMode,
-	         IMAGE_SN_SYNC,
-	         0);
-	if(pipeline != nullptr){
-		base::async([&]() { frameset_reader(pipeline.get()); });
-		device->enableStream();
-		printf("\n\nDevice stream enabled\n");
-		updateColorDepth = CreateEvent(NULL, TRUE, FALSE, NULL);
-	}
-#else
-	ret = device->initStream((libeYs3D::video::COLOR_RAW_DATA_TYPE)config.colorFormat,
-	         config.colorWidth, config.colorHeight, config.fps, 
-	         depth_raw_data_type,
-	         config.depthWidth, config.depthHeight,
-	         (DEPTH_TRANSFER_CTRL)config.videoMode,
-	         IMAGE_SN_SYNC,
-	         0, // rectifyLogIndex
-	         color_image_callback,
-	         depth_image_callback,
-	         nullptr);
-	if(ret == ETronDI_OK){
-		device->enableStream();
-		printf("\n\nDevice stream enabled\n");
-	}
-    cout << "\nopen_device:"<< ret << endl;
-#endif
-
-    //ret = setupIR(0);
-    device->setupIR(0);
+    ret = device->setupIR(0);
     cout << "\nsetupIR:"<< ret << endl;
 
     cout << "\ninput Esc key to stop stream"<< endl;
@@ -1577,47 +1468,47 @@ void face_detect() {
 #endif
 
         //eSPDI camera get frame
-        //get_color_frame(color_frame);
-		//ret = device->readColorFrame((BYTE*)color_frame, (uint64_t)2 * config.colorWidth * config.colorHeight, (uint64_t *)&gColorImgSize, (uint32_t *)&gColorSerial);
-        //int size=0, type;
-        //ret = tjpeg2yuv(color_frame,2 * config.colorWidth * config.colorHeight,&color_frame0, &size,&type);
-        //ret = tyuv2rgb(color_frame0,size, config.colorWidth, config.colorHeight, type,&color_frame,&size);
-        //get_depth_frame(depth_frame, depth_size, 0);
-		//ret = device->readDepthFrame((BYTE*)depth_frame, (uint64_t)depth_size, (uint64_t *)&gDepthImgSize, (uint32_t *)&gDepthSerial);
 		WaitForSingleObject(updateColorDepth, INFINITE);
         ResetEvent(updateColorDepth);
         //cvt to MAT
-        //cv::Mat color_bgr_img(cv::Size(config.colorWidth, config.colorHeight), CV_8UC3, (void*)color_frame, cv::Mat::AUTO_STEP);
-        cv::Mat color_rgb_img(cv::Size(config.colorWidth, config.colorHeight), CV_8UC3, (void*)color_frame, cv::Mat::AUTO_STEP);
-        //cv::Mat color_rgb_img;
-        //cv::cvtColor(color_bgr_img, color_rgb_img, cv::COLOR_RGB2BGR);
+        cv::Mat color_bgr_img(cv::Size(config.colorWidth, config.colorHeight), CV_8UC3, (void*)color_frame, cv::Mat::AUTO_STEP);
+        cv::Mat color_rgb_img;
+        cv::cvtColor(color_bgr_img, color_rgb_img, cv::COLOR_RGB2BGR);
+#if 0
         if (color_rgb_img.empty()) {
             cout << "\ncolor is empty " << endl;
             continue;
         }
+#endif
         cv::Mat depth_bgr_img(cv::Size(config.depthWidth, config.depthHeight), CV_8UC3, (void *) depth_frame,
                               cv::Mat::AUTO_STEP);
         cv::Mat depth_rgb_img;
         cv::cvtColor(depth_bgr_img, depth_rgb_img, cv::COLOR_RGB2BGR);
+#if 0
         if (depth_rgb_img.empty()) {
             cout << "\ndepth is empty " << endl;
             continue;
         }
+#endif
 
         std::vector<cv::Rect> faces;
         cv::Mat color_gry_img;
         cv::cvtColor(color_rgb_img, color_gry_img, cv::COLOR_RGB2GRAY);
         equalizeHist(color_gry_img, color_gry_img);
 
+#if 0
         if (color_gry_img.empty()) {
             cout << "\ngrey is empty " << endl;
             continue;
         }
+#endif
 
         //-- Detect faces
-        face_cascade.detectMultiScale(color_gry_img, faces, 1.2, 5,
-            0 | cv::CASCADE_SCALE_IMAGE, cv::Size(50, 50) );
-
+        //face_cascade.detectMultiScale(color_gry_img, faces, 1.2, 5,
+        //    0 | cv::CASCADE_SCALE_IMAGE, cv::Size(50, 50) );
+        face_cascade.detectMultiScale(color_gry_img, faces, 1.3, 3,
+            0 | cv::CASCADE_SCALE_IMAGE, cv::Size(10, 10) );
+        
         for ( size_t i = 0; i < faces.size(); i++ ) {
             //find face center
             if (!draw_rectangle) {
@@ -1635,8 +1526,10 @@ void face_detect() {
             std::vector<cv::Rect> eyes;
 
             //-- In each face, detect eyes
-            eyes_cascade.detectMultiScale( faceROI, eyes, 1.2, 5,
-                0 | cv::CASCADE_SCALE_IMAGE, cv::Size(50, 50) );
+//            eyes_cascade.detectMultiScale( faceROI, eyes, 1.2, 5,
+//                0 | cv::CASCADE_SCALE_IMAGE, cv::Size(50, 50) );
+            eyes_cascade.detectMultiScale( faceROI, eyes, 1.1, 2,
+                0 | cv::CASCADE_SCALE_IMAGE, cv::Size(10, 10) );
 
             for (size_t j = 0; j < eyes.size(); j++ ) {
                 if (draw_eye) {
@@ -1652,54 +1545,28 @@ void face_detect() {
         }
 
         //image show
-        cv::imshow(color_wd.id, color_rgb_img);
-        cv::imshow(depth_wd.id, depth_rgb_img);
-        //if(faces.size() > 0){
-        //	cv::imwrite("out_img/face_detect.jpg", color_rgb_img);
-        //}
+        if(haveColor)
+        	cv::imshow(color_wd.id, color_rgb_img);
+        if(haveDepth)
+        	cv::imshow(depth_wd.id, depth_rgb_img);
 
         char c = cv::waitKey(30);
         if (c == 27) {
             break;
         }
     }
-    cout << "\nstop color streaming... " << endl;
-    //destroy and release
-    cv::destroyAllWindows();
-    if (color_frame)
-        delete color_frame;
-    if (color_frame0)
-        delete color_frame0;
-    if (depth_frame)
-        delete depth_frame;
-    if (zdTable)
-        delete zdTable;
-    cout << "\nclose_device:"<< endl;
-    //close_device();
-	while (1) {
-		Sleep(1);
-		if (!device) {
-			printf("doesn't need to CloseDevice()!\n");
-			break;
-
-		}
-		device->closeStream();
-		break;
-	}
-    cout << "\nrelease_device:"<< endl;
-    //release_device();
-	if (nullptr != device.get()) {
-		delete device.get();
-		device = nullptr;
-
-	}
-	if (nullptr != eYs3DSystem.get()) {
-		delete eYs3DSystem.get();
-		eYs3DSystem == nullptr;
-	}
+    close_device(false);
 }
 
 void face_mask_detect() {
+	init_device();
+
+    //eSPDI camera open
+    int ret = open_device(false);
+    cout << "\nopen_device:"<< ret << endl;
+    if(ret < 0)
+    	return;
+
     cout << "\n\nface_mask_detect item\n"<< endl;
     cv::CascadeClassifier face_cascade;
     cv::CascadeClassifier nose_cascade;
@@ -1726,72 +1593,7 @@ void face_mask_detect() {
     cv::resizeWindow(depth_wd.id, depth_wd.width, depth_wd.height);
     cv::moveWindow(depth_wd.id, depth_wd.x, depth_wd.y);
 
-	LOG_INFO(LOG_TAG, "Starting EYS3DSystem...");
-	eYs3DSystem = EYS3DSystem::getEYS3DSystem();
-    device = eYs3DSystem->getCameraDevice(0);
-	if(!device)    {
-        LOG_INFO(LOG_TAG, "Unable to find any camera devices...");
-        exit(-1);
-    }
-	config_mode();
-    printf("\ncolorFormat %d, colorWidth:%d, colorHeight:%d, fps:%d, depthWidth:%d, depthHeight:%d, videoMode:%d\n",
-           config.colorFormat, config.colorWidth, config.colorHeight, config.fps, config.depthWidth, config.depthHeight, config.videoMode);
-    //prepare color, depth frame
-    int color_size = config.colorWidth * config.colorHeight * 3;
-    BYTE* color_frame0 = new BYTE [color_size];
-    //BYTE* color_frame = new BYTE [color_size];
-    if(color_frame == nullptr)
-    	color_frame = new BYTE [color_size];
-    cout << "\ncolor_frame size: " << color_size << endl;
-    //int depth_size = config.depthWidth * config.depthHeight * 8;
-    int depth_size = config.depthWidth * config.depthHeight * 3;
-    //BYTE* depth_frame = new BYTE [depth_size];
-    if(depth_frame == nullptr)
-    	depth_frame = new BYTE [depth_size];
-    cout << "\nget_depth_handler size: " << depth_size << endl;
-    if(zdTable == nullptr)
-    	zdTable = new int [depth_size];
-
-    //eSPDI camera open
-    int ret;
-    //ret = init_device();
-    //cout << "\ninit_device:"<< ret << endl;
-    //ret = open_device(config);
-	printf("\n\nEnabling device stream...\n");
-#if 0
-	pipeline = device->initStreamFS((libeYs3D::video::COLOR_RAW_DATA_TYPE)config.colorFormat,
-	         config.colorWidth, config.colorHeight, config.fps, 
-	         depth_raw_data_type,
-	         config.depthWidth, config.depthHeight,
-	         (DEPTH_TRANSFER_CTRL)config.videoMode,
-	         IMAGE_SN_SYNC,
-	         0);
-	if(pipeline != nullptr){
-		base::async([&]() { frameset_reader(pipeline.get()); });
-		device->enableStream();
-		printf("\n\nDevice stream enabled\n");
-		updateColorDepth = CreateEvent(NULL, TRUE, FALSE, NULL);
-	}
-#else
-	ret = device->initStream((libeYs3D::video::COLOR_RAW_DATA_TYPE)config.colorFormat,
-	         config.colorWidth, config.colorHeight, config.fps, 
-	         depth_raw_data_type,
-	         config.depthWidth, config.depthHeight,
-	         (DEPTH_TRANSFER_CTRL)config.videoMode,
-	         IMAGE_SN_SYNC,
-	         0, // rectifyLogIndex
-	         color_image_callback,
-	         depth_image_callback,
-	         nullptr);
-	if(ret == ETronDI_OK){
-		device->enableStream();
-		printf("\n\nDevice stream enabled\n");
-	}
-    cout << "\nopen_device:"<< ret << endl;
-#endif
-
-    //ret = setupIR(0);
-    device->setupIR(0);
+    ret = device->setupIR(0);
     cout << "\nsetupIR:"<< ret << endl;
 
     cout << "\ninput Esc key to stop stream"<< endl;
@@ -1809,46 +1611,47 @@ void face_mask_detect() {
           && cv::getWindowProperty(depth_wd.id, cv::WND_PROP_AUTOSIZE) >= 0) {
 #endif
         //eSPDI camera get frame
-        //get_color_frame(color_frame);
-		//ret = device->readColorFrame((BYTE*)color_frame, (uint64_t)2 * config.colorWidth * config.colorHeight, (uint64_t *)&gColorImgSize, (uint32_t *)&gColorSerial);
-        //int size=0, type;
-        //ret = tjpeg2yuv(color_frame,2 * config.colorWidth * config.colorHeight,&color_frame0, &size,&type);
-        //ret = tyuv2rgb(color_frame0,size, config.colorWidth, config.colorHeight, type,&color_frame,&size);
-        //get_depth_frame(depth_frame, depth_size, 0);
-		//ret = device->readDepthFrame((BYTE*)depth_frame, (uint64_t)depth_size, (uint64_t *)&gDepthImgSize, (uint32_t *)&gDepthSerial);
 		WaitForSingleObject(updateColorDepth, INFINITE);
         ResetEvent(updateColorDepth);
         //cvt to MAT
-        //cv::Mat color_bgr_img(cv::Size(config.colorWidth, config.colorHeight), CV_8UC3, (void*)color_frame, cv::Mat::AUTO_STEP);
-        cv::Mat color_rgb_img(cv::Size(config.colorWidth, config.colorHeight), CV_8UC3, (void*)color_frame, cv::Mat::AUTO_STEP);
-        //cv::Mat color_rgb_img;
-        //cv::cvtColor(color_bgr_img, color_rgb_img, cv::COLOR_RGB2BGR);
+        cv::Mat color_bgr_img(cv::Size(config.colorWidth, config.colorHeight), CV_8UC3, (void*)color_frame, cv::Mat::AUTO_STEP);
+        cv::Mat color_rgb_img;
+        cv::cvtColor(color_bgr_img, color_rgb_img, cv::COLOR_RGB2BGR);
+#if 0
         if (color_rgb_img.empty()) {
             cout << "\ncolor is empty " << endl;
             continue;
         }
+#endif
         cv::Mat depth_bgr_img(cv::Size(config.depthWidth, config.depthHeight), CV_8UC3, (void *) depth_frame,
                               cv::Mat::AUTO_STEP);
         cv::Mat depth_rgb_img;
         cv::cvtColor(depth_bgr_img, depth_rgb_img, cv::COLOR_RGB2BGR);
+#if 0
         if (depth_rgb_img.empty()) {
             cout << "\ndepth is empty " << endl;
             continue;
         }
+#endif
 
         std::vector<cv::Rect> faces;
         cv::Mat color_gry_img;
         cv::cvtColor(color_rgb_img, color_gry_img, cv::COLOR_RGB2GRAY);
         equalizeHist(color_gry_img, color_gry_img);
 
+#if 0
         if (color_gry_img.empty()) {
             cout << "\ngrey is empty " << endl;
             continue;
         }
+#endif
 
         //-- Detect faces
-        face_cascade.detectMultiScale(color_gry_img, faces, 1.3, 5,
-                                      0 | cv::CASCADE_SCALE_IMAGE, cv::Size(50, 50) );
+//        face_cascade.detectMultiScale(color_gry_img, faces, 1.3, 5,
+//                                      0 | cv::CASCADE_SCALE_IMAGE, cv::Size(50, 50) );
+
+        face_cascade.detectMultiScale(color_gry_img, faces, 1.3, 1,
+                                      0 | cv::CASCADE_SCALE_IMAGE, cv::Size(10, 10) );
 
         for ( size_t i = 0; i < faces.size(); i++ ) {
 
@@ -1858,8 +1661,10 @@ void face_mask_detect() {
 
 
             //-- In each face, detect nose
-            nose_cascade.detectMultiScale( faceROI, nose, 1.1, 5,
-                                           0 | cv::CASCADE_SCALE_IMAGE, cv::Size(50, 50) );
+//            nose_cascade.detectMultiScale( faceROI, nose, 1.1, 5,
+//                                           0 | cv::CASCADE_SCALE_IMAGE, cv::Size(50, 50) );
+            nose_cascade.detectMultiScale( faceROI, nose, 1.1, 3,
+                                           0 | cv::CASCADE_SCALE_IMAGE, cv::Size(5, 5) );
 
             for (size_t j = 0; j < nose.size(); j++ ) {
                 if (draw_nose) {
@@ -1908,61 +1713,27 @@ void face_mask_detect() {
         }
 
         //image show
-        cv::imshow(color_wd.id, color_rgb_img);
-        cv::imshow(depth_wd.id, depth_rgb_img);
-        //if(faces.size() > 0){
-        //	cv::imwrite("out_img/face_mask_detect.jpg", color_rgb_img);
-        //}
+        if(haveColor)
+        	cv::imshow(color_wd.id, color_rgb_img);
+        if(haveDepth)
+        	cv::imshow(depth_wd.id, depth_rgb_img);
 
         char c = cv::waitKey(30);
         if (c == 27) {
             break;
         }
     }
-    cout << "\nstop color streaming... " << endl;
-    //destroy and release
-    cv::destroyAllWindows();
-    if (color_frame)
-        delete color_frame;
-    if (color_frame0)
-        delete color_frame0;
-    if (depth_frame)
-        delete depth_frame;
-    if (zdTable)
-        delete zdTable;
-    cout << "\nclose_device:"<< endl;
-    //close_device();
-	while (1) {
-		Sleep(1);
-		if (!device) {
-			printf("doesn't need to CloseDevice()!\n");
-			break;
-
-		}
-		device->closeStream();
-		break;
-	}
-    cout << "\nrelease_device:"<< endl;
-    //release_device();
-	if (nullptr != device.get()) {
-		delete device.get();
-		device = nullptr;
-
-	}
-	if (nullptr != eYs3DSystem.get()) {
-		delete eYs3DSystem.get();
-		eYs3DSystem == nullptr;
-	}
+    close_device(false);
 }
 
 void show_settings_content(window_display &settings_wd) {
     cout << "\n\nshow_settings_content:"<< endl;
     //create IR Trackbar
-    //int ir_value= get_IR_min_value();
     libeYs3D::devices::IRProperty property = device->getIRProperty();
     int ir_value = property.getIRMin();
     int ir_max = property.getIRMax();
-    //cv::createTrackbar(SETTINGS_IR, settings_wd.id, &ir_value, get_IR_max_value(), ir_callback);
+    int ret = device->setupIR(3);
+    cout << "\nsetupIR:"<< ret << endl;
     cv::createTrackbar(SETTINGS_IR, settings_wd.id, &ir_value, ir_max, ir_callback);
     cv::setTrackbarPos(SETTINGS_IR, settings_wd.id, 3);
     //create AE Trackbar
@@ -1974,63 +1745,17 @@ void show_settings_content(window_display &settings_wd) {
 }
 
 void point_cloud_view() {
-    cout << "\n\npoint_cloud_view item\n"<< endl;
-	LOG_INFO(LOG_TAG, "Starting EYS3DSystem...");
-	eYs3DSystem = EYS3DSystem::getEYS3DSystem();
-    device = eYs3DSystem->getCameraDevice(0);
-	if(!device)    {
-        LOG_INFO(LOG_TAG, "Unable to find any camera devices...");
-        exit(-1);
-    }
-	config_mode();
-    printf("\ncolorFormat %d, colorWidth:%d, colorHeight:%d, fps:%d, depthWidth:%d, depthHeight:%d, videoMode:%d\n",
-           config.colorFormat, config.colorWidth, config.colorHeight, config.fps, config.depthWidth, config.depthHeight, config.videoMode);
-    //prepare color, depth frame
-    int color_size = config.colorWidth * config.colorHeight * 3;
-    BYTE* color_frame0 = new BYTE [color_size];
-    //BYTE* color_frame = new BYTE [color_size];
-    if(color_frame == nullptr)
-    	color_frame = new BYTE [color_size];
-    cout << "\ncolor_frame size: " << color_size << endl;
-    int depth_size = config.depthWidth * config.depthHeight * 2; // raw data
-    //BYTE* depth_frame = new BYTE [depth_size];
-    if(depth_frame == nullptr)
-    	depth_frame = new BYTE [depth_size];
-    cout << "\nget_depth_handler size: " << depth_size << endl;
-    int pcl_depth_size = config.depthWidth * config.depthHeight * 3 * sizeof(float);
-    //int pcl_color_size = config.colorWidth * config.colorHeight << 2 * sizeof(BYTE);
-    int pcl_color_size = config.colorWidth * config.colorHeight * 3 * sizeof(BYTE); 
-	//BYTE *color_frame_out = new BYTE[pcl_color_size];
-	if(color_frame_out == nullptr)
-		color_frame_out = new BYTE[pcl_color_size];
-	//float *depth_frame_out = new float[pcl_depth_size];
-	if(depth_frame_out == nullptr)
-		depth_frame_out = new float[pcl_depth_size];
-    if(zdTable == nullptr)
-    	zdTable = new int [depth_size];
-	updatePCHandle = CreateEvent(NULL, TRUE, FALSE, NULL);
-    
+	init_device();
+
     //eSPDI camera open
-    int ret;
-    //ret = init_device();
-    //cout << "\ninit_device:"<< ret << endl;
-    //ret = open_device(config);
-	printf("\n\nEnabling device stream...\n");
-	ret = device->initStream((libeYs3D::video::COLOR_RAW_DATA_TYPE)config.colorFormat,
-	         config.colorWidth, config.colorHeight, config.fps, 
-	         depth_raw_data_type,
-	         config.depthWidth, config.depthHeight,
-	         (DEPTH_TRANSFER_CTRL)config.videoMode,
-	         IMAGE_SN_SYNC,
-	         0, // rectifyLogIndex
-	         nullptr,
-	         nullptr,
-	         pc_frame_callback);
-	if(ret == ETronDI_OK){
-		device->enableStream();
-		printf("\n\nDevice stream enabled\n");
-	}
+	int ret = open_device(true);
     cout << "\nopen_device:"<< ret << endl;
+    if(ret < 0)
+    	return;
+
+	int pcl_depth_size = config.depthWidth * config.depthHeight * 3 * sizeof(float);
+	int pcl_color_size = config.colorWidth * config.colorHeight * 3 * sizeof(BYTE); 
+    cout << "\n\npoint_cloud_view item\n"<< endl;
 
     char item_input;
     cout << "\nTurn on IR (Y/N):" << endl;
@@ -2039,12 +1764,10 @@ void point_cloud_view() {
         switch (item_input) {
             case 'Y':
             case 'y':
-                //setupIR(3);
     			device->setupIR(3);
                 break;
             case 'N':
             case 'n':
-                //setupIR(0);
     			device->setupIR(0);
                 break;
             default:
@@ -2069,37 +1792,10 @@ void point_cloud_view() {
 #endif
     {
         //eSPDI camera get frame
-        //ret = get_color_frame(color_frame);
-		//ret = device->readColorFrame((BYTE*)color_frame, (uint64_t)2 * config.colorWidth * config.colorHeight, (uint64_t *)&gColorImgSize, (uint32_t *)&gColorSerial);
-        //if (ret != 0) {
-        //    cout << "\nget_color_frame failed:" << ret << endl;
-        //    continue;
-        //}
-        //int size=0, type;
-        //ret = tjpeg2yuv(color_frame,2 * config.colorWidth * config.colorHeight,&color_frame0, &size,&type);
-        //ret = tyuv2rgb(color_frame0,size, config.colorWidth, config.colorHeight, type,&color_frame,&size);
-        
-        //ret = get_depth_frame(depth_frame, depth_size, 1); // raw data
-		//ret = device->readDepthFrame((BYTE*)depth_frame, (uint64_t)depth_size, (uint64_t *)&gDepthImgSize, (uint32_t *)&gDepthSerial);
-        //if (ret != 0) {
-        //    cout << "\nget_depth_frame failed:" << ret << endl;
-        //    continue;
-        //}
         int count = 0;
         vector<CloudPoint> cloudPoint;
         if (ret == 0) {
 #if 1
-            /*if (pcl_gpu) {
-                cloudPoint = PyGeneratePointCloud_GPU(depth_frame, config.depthWidth, config.depthHeight,
-                                                                         color_frame, config.colorWidth, config.colorHeight);
-            } else {
-                cloudPoint = PyGeneratePointCloud(depth_frame, config.depthWidth, config.depthHeight,
-                                                                         color_frame, config.colorWidth, config.colorHeight,
-                                                                         false);
-            }*/
-            /*ret = generate_point_cloud_gpu(color_frame, depth_frame,
-                                           color_frame_out, &pcl_color_size,
-                                           depth_frame_out, &pcl_depth_size);*/
 			std::vector<float> m_pointCloudDepth;
 		    std::vector<BYTE> m_pointCloudColor;
 		    if (m_pointCloudDepth.size() != (size_t)(config.colorWidth * config.colorHeight * 3)) m_pointCloudDepth.resize(config.colorWidth * config.colorHeight * 3);
@@ -2108,7 +1804,6 @@ void point_cloud_view() {
 		    if (m_pointCloudColor.size() != (size_t)(config.colorWidth * config.colorHeight * 3)) m_pointCloudColor.resize(config.colorWidth * config.colorHeight * 3);
 		    else                                                          std::fill(m_pointCloudColor.begin(), m_pointCloudColor.end(), 0);
 
-			//ret = device->readPCFrame(color_frame, depth_frame, color_frame_out, depth_frame_out);
 			WaitForSingleObject(updatePCHandle, INFINITE);
 			ResetEvent(updatePCHandle);
             // prevent assertion fail
@@ -2150,105 +1845,22 @@ void point_cloud_view() {
 #endif
         }
     }
-    cout << "\nstop color streaming... " << endl;
-    //destroy and release
-    cv::destroyAllWindows();
-    if (color_frame)
-        delete color_frame;
-    if (color_frame0)
-        delete color_frame0;
-    if (depth_frame)
-        delete depth_frame;
-    if (zdTable)
-        delete zdTable;
-    cout << "\nclose_device:"<< endl;
-    //close_device();
-	while (1) {
-		Sleep(1);
-		if (!device) {
-			printf("doesn't need to CloseDevice()!\n");
-			break;
-
-		}
-		device->closeStream();
-		break;
-	}
-    cout << "\nrelease_device:"<< endl;
-    //release_device();
-	if (nullptr != device.get()) {
-		delete device.get();
-		device = nullptr;
-
-	}
-	if (nullptr != eYs3DSystem.get()) {
-		delete eYs3DSystem.get();
-		eYs3DSystem == nullptr;
-	}
+    close_device(true);
 }
 
 void point_cloud_view_with_opengl() {
-    cout << "\n\npoint cloud view with opengl item\n"<< endl;
-#ifdef SUPPORT_QT_OPENGL
-
-	LOG_INFO(LOG_TAG, "Starting EYS3DSystem...");
-	eYs3DSystem = EYS3DSystem::getEYS3DSystem();
-    device = eYs3DSystem->getCameraDevice(0);
-	if(!device)    {
-        LOG_INFO(LOG_TAG, "Unable to find any camera devices...");
-        exit(-1);
-    }
-	config_mode();
-    printf("\ncolorFormat %d, colorWidth:%d, colorHeight:%d, fps:%d, depthWidth:%d, depthHeight:%d, videoMode:%d\n",
-           config.colorFormat, config.colorWidth, config.colorHeight, config.fps, config.depthWidth, config.depthHeight, config.videoMode);
-    //prepare color, depth frame
-    int color_size = config.colorWidth * config.colorHeight * 3;
-    BYTE* color_frame0 = new BYTE [color_size];
-    //BYTE *color_frame = new BYTE[color_size];
-    if(color_frame == nullptr)
-    	color_frame = new BYTE[color_size];
-    //BYTE *color_frame_out = new BYTE[color_size];
-    cout << "\ncolor_frame size: " << color_size << endl;
-    //int depth_size = config.depthWidth * config.depthHeight * 8; // raw data
-    int depth_size = config.depthWidth * config.depthHeight * 2; // raw data
-    //BYTE *depth_frame = new BYTE[depth_size];
-    if(depth_frame == nullptr)
-    	depth_frame = new BYTE[depth_size];
-    //float *depth_frame_out = new float[depth_size * sizeof(float)];
-    cout << "\nget_depth_handler size: " << depth_size << endl;
-    int pcl_depth_size = config.depthWidth * config.depthHeight * 3 * sizeof(float);
-    //int pcl_color_size = config.colorWidth * config.colorHeight << 2 * sizeof(BYTE);
-    int pcl_color_size = config.colorWidth * config.colorHeight * 3 * sizeof(BYTE);
-	//BYTE *color_frame_out = new BYTE[pcl_color_size];
-	if(color_frame_out == nullptr)
-		color_frame_out = new BYTE[pcl_color_size];
-	//float *depth_frame_out = new float[pcl_depth_size];
-	if(depth_frame_out == nullptr)
-		depth_frame_out = new float[pcl_depth_size];
-    if(zdTable == nullptr)
-    	zdTable = new int [depth_size];
-	updatePCHandle = CreateEvent(NULL, TRUE, FALSE, NULL);
+	init_device();
 
     //eSPDI camera open
-    int ret;
-    //ret = init_device();
-    //cout << "\ninit_device:"<< ret << endl;
-    //ret = open_device(config);
-	printf("\n\nEnabling device stream...\n");
-	ret = device->initStream((libeYs3D::video::COLOR_RAW_DATA_TYPE)config.colorFormat,
-	         config.colorWidth, config.colorHeight, config.fps, 
-	         depth_raw_data_type,
-	         config.depthWidth, config.depthHeight,
-	         (DEPTH_TRANSFER_CTRL)config.videoMode,
-	         IMAGE_SN_SYNC,
-	         0, // rectifyLogIndex
-	         nullptr,
-	         nullptr,
-	         pc_frame_callback);
-	if(ret == ETronDI_OK){
-		device->enableStream();
-		printf("\n\nDevice stream enabled\n");
-	}
-    cout << "\nopen_device:" << ret << endl;
+	int ret = open_device(true);
+    cout << "\nopen_device:"<< ret << endl;
+    if(ret < 0)
+    	return;
+
+	int pcl_depth_size = config.depthWidth * config.depthHeight * 3 * sizeof(float);
+	int pcl_color_size = config.colorWidth * config.colorHeight * 3 * sizeof(BYTE); 
+    cout << "\n\npoint cloud view with opengl item\n"<< endl;
+#ifdef SUPPORT_QT_OPENGL
 
     char item_input;
     cout << "\nTurn on IR (Y/N):" << endl;
@@ -2259,12 +1871,10 @@ void point_cloud_view_with_opengl() {
         {
         case 'Y':
         case 'y':
-            //setupIR(3);
     		device->setupIR(3);
             break;
         case 'N':
         case 'n':
-            //setupIR(0);
     		device->setupIR(0);
             break;
         default:
@@ -2298,48 +1908,10 @@ void point_cloud_view_with_opengl() {
 #endif
     	
         //eSPDI camera get frame
-        //ret = get_color_frame(color_frame);
-		//ret = device->readColorFrame((BYTE*)color_frame, (uint64_t)2 * config.colorWidth * config.colorHeight, (uint64_t *)&gColorImgSize, (uint32_t *)&gColorSerial);
-        //int size=0, type;
-        //ret = tjpeg2yuv(color_frame,2 * config.colorWidth * config.colorHeight,&color_frame0, &size,&type);
-        //ret = tyuv2rgb(color_frame0,size, config.colorWidth, config.colorHeight, type,&color_frame,&size);
-        //if (ret != 0)
-        //{
-        //    cout << "\nget_color_frame failed:" << ret << endl;
-        //    continue;
-        //}
-        //ret = get_depth_frame(depth_frame, depth_size, 1); // raw data
-		//ret = device->readDepthFrame((BYTE*)depth_frame, (uint64_t)depth_size, (uint64_t *)&gDepthImgSize, (uint32_t *)&gDepthSerial);
-        //if (ret != 0)
-        //{
-        //    cout << "\nget_depth_frame failed:" << ret << endl;
-        //    continue;
-        //}
         int count = 0;
         vector<CloudPoint> cloudPoint;
         if (ret == 0)
         {
-            /*if (1)
-            {
-                cloudPoint = PyGeneratePointCloud_GPU(depth_frame, config.depthWidth, config.depthHeight,
-                                                      color_frame, config.colorWidth, config.colorHeight);
-            }
-            else
-            {
-                cloudPoint = PyGeneratePointCloud(depth_frame, config.depthWidth, config.depthHeight,
-                                                  color_frame, config.colorWidth, config.colorHeight,
-                                                  false);
-            }
-
-            if (count <= 0)
-            {
-                PlyWriter::writePly(cloudPoint, "123.ply");
-                count++;
-            }*/
-
-            /*ret = generate_point_cloud_gpu(color_frame, depth_frame,
-                                           color_frame_out, &pcl_color_size,
-                                           depth_frame_out, &pcl_depth_size);*/
 			std::vector<float> m_pointCloudDepth;
 		    std::vector<BYTE> m_pointCloudColor;
 		    if (m_pointCloudDepth.size() != (size_t)(config.colorWidth * config.colorHeight * 3)) m_pointCloudDepth.resize(config.colorWidth * config.colorHeight * 3);
@@ -2347,8 +1919,6 @@ void point_cloud_view_with_opengl() {
 
 		    if (m_pointCloudColor.size() != (size_t)(config.colorWidth * config.colorHeight * 3)) m_pointCloudColor.resize(config.colorWidth * config.colorHeight * 3);
 		    else                                                          std::fill(m_pointCloudColor.begin(), m_pointCloudColor.end(), 0);
-
-			//ret = device->readPCFrame(color_frame, depth_frame, color_frame_out, depth_frame_out);
 
 			WaitForSingleObject(updatePCHandle, INFINITE);
 			ResetEvent(updatePCHandle);
@@ -2371,42 +1941,7 @@ void point_cloud_view_with_opengl() {
             break;
         }
     }
-
-    //destroy and release
-    cv::destroyAllWindows();
-
-    if (color_frame) delete [] color_frame;
-    if (color_frame_out) delete [] color_frame_out;
-
-    if (depth_frame) delete [] depth_frame;
-    if (depth_frame_out) delete [] depth_frame_out;
-
-    if (zdTable)
-        delete zdTable;
-
-    cout << "\nclose_device:" << endl;
-    //close_device();
-	while (1) {
-		Sleep(1);
-		if (!device) {
-			printf("doesn't need to CloseDevice()!\n");
-			break;
-
-		}
-		device->closeStream();
-		break;
-	}
-    cout << "\nrelease_device:" << endl;
-    //release_device();
-	if (nullptr != device.get()) {
-		delete device.get();
-		device = nullptr;
-
-	}
-	if (nullptr != eYs3DSystem.get()) {
-		delete eYs3DSystem.get();
-		eYs3DSystem == nullptr;
-	}
+    close_device(true);
 #else
     cout << "Not support OpenGL!"<< endl;
 #endif

@@ -85,8 +85,7 @@ private:
     void calculateDepthAccuracyInfo(Frame *frame);
     void calculateDepthSpatialNoise(Frame *frame);
     void calculateDepthTemporalNoise(Frame *frame);
-    uint16_t getDepth(const Frame *frame, int x, int y);
-    uint16_t getZValue(const Frame *frame, uint16_t depth);
+
 };  // class FrameProducer
 
 }  // namespace video
