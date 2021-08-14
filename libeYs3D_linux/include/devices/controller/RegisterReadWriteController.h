@@ -27,7 +27,7 @@ class CameraDevice;
 
 class RegisterReadWriteController : public libeYs3D::base::Thread    {
 public:
-    virtual ~RegisterReadWriteController()   {};
+    virtual ~RegisterReadWriteController();
 
     void commitReadRegisters();
     void commitWriteRegisters();

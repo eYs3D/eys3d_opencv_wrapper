@@ -124,6 +124,7 @@ protected:
     libeYs3D::sensors::SensorDataProducer::Callback mIMUDataCallback;
     
     uint32_t mFrameProducerState;
+    bool mIsStopped = false;
 
 private:
     void initialize();
@@ -166,7 +167,7 @@ private:
     base::MessageChannel<libeYs3D::sensors::SensorDataSet, kMaxFrames> mSensorDataSetQueue;
     base::MessageChannel<libeYs3D::sensors::SensorDataSet, kMaxFrames> mFreeSensorDataSetQueue;
     
-    bool mIsStopped = false;
+
     
     libeYs3D::base::ThreadPool<libeYs3D::video::CallbackWorkItem> mCBThreadPool;
     libeYs3D::base::ThreadPool<libeYs3D::video::CallbackWorkItem> mPCCBThreadPool;

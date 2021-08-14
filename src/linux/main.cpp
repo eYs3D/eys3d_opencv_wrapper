@@ -657,6 +657,8 @@ void preview_color_depth() {
     int ret;
     ret = init_device();
     cout << "\ninit_device:"<< ret << endl;
+    CameraOpenConfig config = get_mode_config(5);
+
     printf("\ncolorFormat %d, colorWidth:%d, colorHeight:%d, fps:%d, depthWidth:%d, depthHeight:%d, videoMode:%d\n",
            config.colorFormat, config.colorWidth, config.colorHeight, config.fps, config.depthWidth, config.depthHeight, config.videoMode);
     ret = open_device(config);
@@ -796,6 +798,8 @@ void preview_all() {
     int ret;
     ret = init_device();
     cout << "\ninit_device:"<< ret << endl;
+    CameraOpenConfig config = get_mode_config(5);
+
     printf("\ncolorFormat %d, colorWidth:%d, colorHeight:%d, fps:%d, depthWidth:%d, depthHeight:%d, videoMode:%d\n",
            config.colorFormat, config.colorWidth, config.colorHeight, config.fps, config.depthWidth, config.depthHeight, config.videoMode);
     ret = open_device(config);
@@ -938,6 +942,8 @@ void face_detect() {
     int ret;
     ret = init_device();
     cout << "\ninit_device:"<< ret << endl;
+    CameraOpenConfig config = get_mode_config(5);
+
     printf("\ncolorFormat %d, colorWidth:%d, colorHeight:%d, fps:%d, depthWidth:%d, depthHeight:%d, videoMode:%d\n",
            config.colorFormat, config.colorWidth, config.colorHeight, config.fps, config.depthWidth, config.depthHeight, config.videoMode);
     ret = open_device(config);
@@ -1085,6 +1091,8 @@ void face_mask_detect() {
     int ret;
     ret = init_device();
     cout << "\ninit_device:"<< ret << endl;
+    CameraOpenConfig config = get_mode_config(5);
+
     printf("\ncolorFormat %d, colorWidth:%d, colorHeight:%d, fps:%d, depthWidth:%d, depthHeight:%d, videoMode:%d\n",
            config.colorFormat, config.colorWidth, config.colorHeight, config.fps, config.depthWidth, config.depthHeight, config.videoMode);
     ret = open_device(config);
@@ -1360,6 +1368,8 @@ void point_cloud_view_with_opengl() {
     int ret;
     ret = init_device();
     cout << "\ninit_device:" << ret << endl;
+    CameraOpenConfig config = get_mode_config(5);
+
     printf("\ncolorFormat %d, colorWidth:%d, colorHeight:%d, fps:%d, depthWidth:%d, depthHeight:%d, videoMode:%d\n",
            config.colorFormat, config.colorWidth, config.colorHeight, config.fps, config.depthWidth, config.depthHeight, config.videoMode);
     ret = open_device(config);

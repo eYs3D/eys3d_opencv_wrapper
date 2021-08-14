@@ -57,7 +57,7 @@ static inline int get_color_image_format_byte_length_per_pixel(EtronDIImageType:
 static inline int get_depth_image_format_byte_length_per_pixel(EtronDIImageType::Value format)    {
     switch (format){
         case EtronDIImageType::DEPTH_8BITS:
-            return 4;
+            return 1;
         case EtronDIImageType::DEPTH_8BITS_0x80:
             return 2;
         case EtronDIImageType::DEPTH_11BITS:

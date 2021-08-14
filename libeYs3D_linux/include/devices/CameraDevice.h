@@ -28,6 +28,7 @@
 #include "video/video.h"
 #include "video/FrameProducer.h"
 #include "video/PCProducer.h"
+#include "video/DepthFrameProducer.h"
 #include "sensors/SensorDataProducer.h"
 #include "Constants.h"
 #include "utils.h"
@@ -291,6 +292,8 @@ public:
 	int setHWRegister(unsigned short address, unsigned short nValue);
 	unsigned short getFWRegister(unsigned short address);
 	int setFWRegister(unsigned short address, unsigned short nValue);
+    unsigned short getSensorRegister(unsigned short address, SENSORMODE_INFO sensorMode, int slaveID);
+    int setSensorRegister(unsigned short address, unsigned short nValue, SENSORMODE_INFO sensorMode, int slaveID);
 
     virtual void release();
     virtual ~CameraDevice();
@@ -399,6 +402,8 @@ public:
     bool mBlockingRead;
     uint32_t mCameraDeviceState;
     bool mInterleaveModeEnabled;
+
+    bool mSupportingInterleave;
 
     // IMU
     IMUDevice *mIMUDevice = nullptr;

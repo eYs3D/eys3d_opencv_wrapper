@@ -365,6 +365,26 @@ PDEVSELINFO pDevSelInfo)
 int ETRONDI_API EtronDI_DepthMerge( void *pHandleEtronDI, PDEVSELINFO pDevSelInfo, unsigned char** pDepthBufList, float *pDepthMergeOut,
     unsigned char *pDepthMergeFlag, int nDWidth, int nDHeight, float fFocus, float * pBaseline, float * pWRNear, float * pWRFar, float * pWRFusion, int nMergeNum );
 
+/*! \fn int ETRONDI_API EtronDI_AdjustFocalLengthFromFlash(void *pHandleEtronDI, PDEVSELINFO pDevSelInfo, int width, int height);
+*/
+int ETRONDI_API EtronDI_AdjustFocalLengthFromFlash(void *pHandleEtronDI, PDEVSELINFO pDevSelInfo, int width, int height);
+
+/*! \fn int ETRONDI_API EtronDI_AdjustFocalLength(void *pHandleEtronDI, PDEVSELINFO pDevSelInfo, int width, int height, int pixelUnit);
+*/
+int ETRONDI_API EtronDI_AdjustFocalLength(void *pHandleEtronDI, PDEVSELINFO pDevSelInfo, int width, int height, int pixelUnit);
+
+/*! \fn int ETRONDI_API EtronDI_GetDeviceFocalLength(void *pHandleEtronDI, PDEVSELINFO pDevSelInfo,
+								 int *pLeftFx, int *pLeftFy, int *pRightFx, int *pRightFy);
+*/
+int ETRONDI_API EtronDI_GetDeviceFocalLength(void *pHandleEtronDI, PDEVSELINFO pDevSelInfo,
+	int *pLeftFx, int *pLeftFy, int *pRightFx, int *pRightFy);
+
+/*! \fn ETRONDI_API EtronDI_GetFlashFocalLength(void *pHandleEtronDI, PDEVSELINFO pDevSelInfo, int width, int height,
+								int *pLeftFx, int *pLeftFy, int *pRightFx, int *pRightFy, int *pPixelUnit);
+*/
+int ETRONDI_API EtronDI_GetFlashFocalLength(void *pHandleEtronDI, PDEVSELINFO pDevSelInfo, int width, int height,
+	int *pLeftFx, int *pLeftFy, int *pRightFx, int *pRightFy, int *pPixelUnit);
+
 #ifdef __cplusplus
 }
 #endif

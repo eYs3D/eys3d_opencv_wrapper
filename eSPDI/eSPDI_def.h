@@ -50,7 +50,6 @@
 #define  ETronDI_DEVICE_BUSY		     -33
 #define  ETronDI_DEVICE_TIMEOUT		     -34
 #define  ETronDI_IO_SELECT_EINTR	     -35
-#define ETronDI_IO_SELECT_ERROR          -36
 
 // for 3D Scanner +    
 #define  ETronDI_ILLEGAL_ANGLE                -40

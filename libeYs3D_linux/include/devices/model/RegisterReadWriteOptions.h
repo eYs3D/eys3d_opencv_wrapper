@@ -35,7 +35,7 @@ class CameraDevice;
 class RegisterReadWriteOptions    {
 public:
     enum TYPE    {
-        IC2,
+        I2C,
         ASIC,
         FW,
         TYPE_NONE
@@ -82,7 +82,7 @@ protected:
     RegisterReadWriteOptions();
 
 private:
-    TYPE mRegisterType = IC2;
+    TYPE mRegisterType = I2C;
     int mSlaveID = EOF;
     uint16_t mAddressSize = FG_Address_1Byte;
     uint16_t mValueSize = FG_Value_1Byte;

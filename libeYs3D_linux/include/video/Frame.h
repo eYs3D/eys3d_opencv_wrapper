@@ -20,6 +20,7 @@
 #include "sensors/SensorData.h"
 #include "base/synchronization/Lock.h"
 #include "GeneralFrame.h"
+#include "video/video.h"
 
 #include <cstdint>                // for uint8_t, uint32_t, uint64_t
 #include <vector>                 // for vector
@@ -40,6 +41,11 @@ public:
     int32_t height;
     uint64_t actualDataBufferSize;  // the actual buffer size getting from device
     uint64_t dataBufferSize;        // the data length of dataVec
+    uint16_t nDevType;
+    int32_t nZDTableSize;// = ETronDI_ZD_TABLE_FILE_SIZE_11_BITS;
+    std::vector<uint8_t> nZDTable;
+    uint16_t getDepth( int x, int y) const;
+    uint16_t getZValue(uint16_t depth) const;
     
 #ifdef DEVICE_MEMORY_ALLOCATOR
     std::vector<uint8_t, libeYs3D::devices::MemoryAllocator<uint8_t>> dataVec;

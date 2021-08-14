@@ -46,7 +46,7 @@ public:
     friend std::unique_ptr<FrameProducer> createDepthFrameProducer(CameraDevice *cameraDevice);
     
     virtual const char* getName() override    { return "DepthFrameProducer"; }
-    virtual ~DepthFrameProducer() {}
+    virtual ~DepthFrameProducer() override;
 
 protected:
     DepthFrameProducer(CameraDevice *cameraDevice);
@@ -78,13 +78,36 @@ private:
     std::list<std::vector<int16_t>> mDepthList; // for calculateDepthTemporalNoise
     
     libeYs3D::base::ThreadPool<DACalculateWorkItem> mDACalculateThreadPool;
-    libeYs3D::base::MessageChannel<int, 3> mFinishSignal;
+    libeYs3D::base::MessageChannel<int, 3> mFinishSignalForAccuracy;
+    libeYs3D::base::MessageChannel<int, 1> mFinishSignalForROI;
     std::function<void(Frame *)> mCalculateDepthAccuracyInfo;
     std::function<void(Frame *)> mCalculateDepthSpatialNoise;
     std::function<void(Frame *)> mCalculateDepthTemporalNoise;
+    //std::function<void(Frame *)> mCalculateROIComputation;
+    
     void calculateDepthAccuracyInfo(Frame *frame);
     void calculateDepthSpatialNoise(Frame *frame);
     void calculateDepthTemporalNoise(Frame *frame);
+    //void calculateROIComputation(Frame *frame);
+
+    bool mIsFinishedForAccuracy;
+    int mMessageCountForAccuracy;
+    libeYs3D::video::Frame mFrameForAccuracy;
+    libeYs3D::video::Frame mFrameTempForAccuracy;
+    int64_t mCurrentTimeForAccuracy;
+    int64_t mNewTimeForAccuracy;
+    int mSignalControlForAccuracy;
+    //int mSignalMessageForAccuracy;
+
+    //bool mIsFinishedForROI;
+    //int mMessageCountForROI;
+    //libeYs3D::video::Frame mFrameForROI;
+    //libeYs3D::video::Frame mFrameTempForROI;
+    //int64_t mCurrentTimeForROI;
+    //int64_t mNewTimeForROI;
+    //int mSignalControlForROI;
+    //int mSignalMessageForROI;
+
 
 };  // class FrameProducer
 

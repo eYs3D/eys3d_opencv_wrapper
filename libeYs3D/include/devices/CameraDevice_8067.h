@@ -20,8 +20,10 @@
 namespace libeYs3D    {
 namespace devices    {
 
-class CameraDevice8059: public CameraDevice    {
+class CameraDevice8067: public CameraDevice    {
 public:
+    friend class CameraDeviceFactory;
+    
     virtual int initStream(libeYs3D::video::COLOR_RAW_DATA_TYPE colorFormat,
                            int32_t colorWidth, int32_t colorHeight, int32_t actualFps,
                            libeYs3D::video::DEPTH_RAW_DATA_TYPE depthFormat,
@@ -33,22 +35,16 @@ public:
                            libeYs3D::video::Producer::Callback depthImageCallback,
                            libeYs3D::video::PCProducer::PCCallback pcFrameCallback,
                            libeYs3D::sensors::SensorDataProducer::AppCallback imuDataCallback = nullptr) override;
-    
+                           
     virtual bool isInterleaveModeSupported() override;
-    
-    virtual bool isIMUDeviceSupported() override   { return false; }
 
-    virtual ~CameraDevice8059() = default;
+    virtual ~CameraDevice8067() = default;
 
 protected:
-    explicit CameraDevice8059(DEVSELINFO *devSelInfo, DEVINFORMATION *deviceInfo);
-
+    explicit CameraDevice8067(DEVSELINFO *devSelInfo, DEVINFORMATION *deviceInfo);
     virtual int getZDTableIndex();
-
-    //virtual int initIMUDevice() override;
     
-public:
-    friend class CameraDeviceFactory;
+    bool mSupportingInterleave;
 };
 
 } // end of namespace devices

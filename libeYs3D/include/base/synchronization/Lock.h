@@ -127,7 +127,7 @@ public:
     using AutoReadLock = base::AutoReadLock;
 
 #ifdef _WIN32
-    constexpr ReadWriteLock() = default;
+    ReadWriteLock() { ::InitializeSRWLock(&mLock); }
     ~ReadWriteLock() = default;
     void lockRead() { ::AcquireSRWLockShared(&mLock); }
     void unlockRead() { ::ReleaseSRWLockShared(&mLock); }
@@ -203,7 +203,7 @@ public:
     }
 
     void unlockWrite() {
-        assert(mWriteLocked);
+		assert(mWriteLocked);
         mLock.unlockWrite();
         mWriteLocked = false;
     }

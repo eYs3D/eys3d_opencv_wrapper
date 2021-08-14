@@ -82,6 +82,7 @@ public:
     const char *getVideoRecordingPath() const    { return mVideoRecordingPath; }
     const char *getSnapshotPath() const    { return mSnapshotPath; }
     const char *getIMULogPath() const    { return mIMULogPath; }
+    const char *getReadRegisterLogsPath() const {return mReadRegisterLogsPath;}
     
     int getFPSWindowSize()    { return mFPSWindowSize; }
     
@@ -112,6 +113,7 @@ private:
     char mVideoRecordingPath[PATH_MAX];
     char mSnapshotPath[PATH_MAX];
     char mIMULogPath[PATH_MAX];
+    char mReadRegisterLogsPath[PATH_MAX];
     
     int mFPSWindowSize;
 };

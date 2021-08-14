@@ -105,6 +105,8 @@ typedef struct tagETRONDI_STREAM_INFO {
 #define ETronDI_PID_SALLY   0x0158
 #define ETronDI_PID_8062    0x0162
 #define ETronDI_PID_Hypatia 0x0160
+#define ETronDI_PID_SANDRA  0x0167
+#define ETronDI_PID_8067    0x012C
 
 #define BIT_SET(a,b) ((a) |= (1<<(b)))
 #define BIT_CLEAR(a,b) ((a) &= ~(1<<(b)))
