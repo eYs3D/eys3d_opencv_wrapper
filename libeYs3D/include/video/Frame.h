@@ -1,16 +1,7 @@
 /*
- * Copyright (C) 2015-2017 ICL/ITRI
+ * Copyright (C) 2021 eYs3D Corporation
  * All rights reserved.
- *
- * NOTICE:  All information contained herein is, and remains
- * the property of ICL/ITRI and its suppliers, if any.
- * The intellectual and technical concepts contained
- * herein are proprietary to ICL/ITRI and its suppliers and
- * may be covered by Taiwan and Foreign Patents,
- * patents in process, and are protected by trade secret or copyright law.
- * Dissemination of this information or reproduction of this material
- * is strictly forbidden unless prior written permission is obtained
- * from ICL/ITRI.
+ * This project is licensed under the Apache License, Version 2.0.
  */
 
 #pragma once
@@ -42,7 +33,7 @@ public:
     uint64_t actualDataBufferSize;  // the actual buffer size getting from device
     uint64_t dataBufferSize;        // the data length of dataVec
     uint16_t nDevType;
-    int32_t nZDTableSize;// = ETronDI_ZD_TABLE_FILE_SIZE_11_BITS;
+    int32_t nZDTableSize;// = APC_ZD_TABLE_FILE_SIZE_11_BITS;
     std::vector<uint8_t> nZDTable;
     uint16_t getDepth( int x, int y) const;
     uint16_t getZValue(uint16_t depth) const;

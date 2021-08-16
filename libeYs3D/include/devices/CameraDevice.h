@@ -1,16 +1,7 @@
 /*
- * Copyright (C) 2015-2019 ICL/ITRI
+ * Copyright (C) 2021 eYs3D Corporation
  * All rights reserved.
- *
- * NOTICE:  All information contained herein is, and remains
- * the property of ICL/ITRI and its suppliers, if any.
- * The intellectual and technical concepts contained
- * herein are proprietary to ICL/ITRI and its suppliers and
- * may be covered by Taiwan and Foreign Patents,
- * patents in process, and are protected by trade secret or copyright law.
- * Dissemination of this information or reproduction of this material
- * is strictly forbidden unless prior written permission is obtained
- * from ICL/ITRI.
+ * This project is licensed under the Apache License, Version 2.0.
  */
 
 #pragma once
@@ -136,9 +127,9 @@ struct CameraDeviceInfo    {
 
 struct ZDTableInfo    {
     ZDTABLEINFO nZDTableInfo;
-    int32_t nZDTableSize = ETronDI_ZD_TABLE_FILE_SIZE_11_BITS;
+    int32_t nZDTableSize = APC_ZD_TABLE_FILE_SIZE_11_BITS;
     int32_t nActualZDTableLength;
-    uint8_t nZDTable[ETronDI_ZD_TABLE_FILE_SIZE_11_BITS] = {0};
+    uint8_t nZDTable[APC_ZD_TABLE_FILE_SIZE_11_BITS] = {0};
     uint16_t nZDTableMaxFar;
     uint16_t nZDTableMaxNear;
 };
@@ -161,7 +152,7 @@ public:
      *     DEPTH_IMG_COLORFUL_TRANSFER, DEPTH_IMG_GRAY_TRANSFER, DEPTH_IMG_NON_TRANSFER (default)
      * 
      * return
-     *     0 (EtronDI_OK): succeed
+     *     0 (APC_OK): succeed
      *     < 0           : align with with error codes defined in eSPDI_def.h
      *     1:            : enabled, please realease the stream before it can be enabled again.
      */
@@ -271,7 +262,7 @@ public:
 
     // IMU
     IMUDevice::IMUDeviceInfo getIMUDeviceInfo();
-    //virtual int ConfigIMU(){ return ETronDI_OK; }
+    //virtual int ConfigIMU(){ return APC_OK; }
     virtual bool isIMUDeviceSupported()    { return false; }
     virtual bool isIMUDevicePresent()    { return (isIMUDeviceSupported() && (mIMUDevice != nullptr)); }
     //virtual CIMUModel *GetIMUModel(){ return m_pIMUModel; }
@@ -303,8 +294,8 @@ public:
     
     int toString(char *buffer, int bufferLength);
 
-    std::vector<ETRONDI_STREAM_INFO> getColorStreamInfo() { return mColorStreamInfo; }
-    std::vector<ETRONDI_STREAM_INFO> getDepthStreamInfo() { return mDepthStreamInfo; }
+    std::vector<APC_STREAM_INFO> getColorStreamInfo() { return mColorStreamInfo; }
+    std::vector<APC_STREAM_INFO> getDepthStreamInfo() { return mDepthStreamInfo; }
 
 	int GetPixelUnit(){ return m_nPixelUnit;} 
 	void UpdatePixelUnit();
@@ -354,8 +345,8 @@ protected:
 protected:
     DEVSELINFO mDevSelInfo;
     CameraDeviceInfo mCameraDeviceInfo;
-    std::vector<ETRONDI_STREAM_INFO> mColorStreamInfo;
-    std::vector<ETRONDI_STREAM_INFO> mDepthStreamInfo;
+    std::vector<APC_STREAM_INFO> mColorStreamInfo;
+    std::vector<APC_STREAM_INFO> mDepthStreamInfo;
     
     DepthFilterOptions mDepthFilterOptions;
     DepthAccuracyOptions mDepthAccuracyOptions;

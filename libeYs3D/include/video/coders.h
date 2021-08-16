@@ -1,16 +1,7 @@
 /*
- * Copyright (C) 2015-2017 ICL/ITRI
+ * Copyright (C) 2021 eYs3D Corporation
  * All rights reserved.
- *
- * NOTICE:  All information contained herein is, and remains
- * the property of ICL/ITRI and its suppliers, if any.
- * The intellectual and technical concepts contained
- * herein are proprietary to ICL/ITRI and its suppliers and
- * may be covered by Taiwan and Foreign Patents,
- * patents in process, and are protected by trade secret or copyright law.
- * Dissemination of this information or reproduction of this material
- * is strictly forbidden unless prior written permission is obtained
- * from ICL/ITRI.
+ * This project is licensed under the Apache License, Version 2.0.
  */
 
 #pragma once
@@ -38,31 +29,31 @@ namespace video    {
 
 struct Frame;
 
-static inline EtronDIImageType::Value depth_raw_type_to_depth_image_type(uint32_t depth_raw_type)    {
-    return EtronDIImageType::DepthDataTypeToDepthImageType((unsigned short)depth_raw_type);
+static inline APCImageType::Value depth_raw_type_to_depth_image_type(uint32_t depth_raw_type)    {
+    return APCImageType::DepthDataTypeToDepthImageType((unsigned short)depth_raw_type);
 }
 
-static inline int get_color_image_format_byte_length_per_pixel(EtronDIImageType::Value format)    {
+static inline int get_color_image_format_byte_length_per_pixel(APCImageType::Value format)    {
     switch (format){
-        case EtronDIImageType::COLOR_MJPG:
-        case EtronDIImageType::COLOR_YUY2:
+        case APCImageType::COLOR_MJPG:
+        case APCImageType::COLOR_YUY2:
             return 2;
-        case EtronDIImageType::COLOR_RGB24:
+        case APCImageType::COLOR_RGB24:
             return 3;
         default:
             return 0;
     }
 }
 
-static inline int get_depth_image_format_byte_length_per_pixel(EtronDIImageType::Value format)    {
+static inline int get_depth_image_format_byte_length_per_pixel(APCImageType::Value format)    {
     switch (format){
-        case EtronDIImageType::DEPTH_8BITS:
+        case APCImageType::DEPTH_8BITS:
             return 1;
-        case EtronDIImageType::DEPTH_8BITS_0x80:
+        case APCImageType::DEPTH_8BITS_0x80:
             return 2;
-        case EtronDIImageType::DEPTH_11BITS:
+        case APCImageType::DEPTH_11BITS:
             return 2;
-        case EtronDIImageType::DEPTH_14BITS:
+        case APCImageType::DEPTH_14BITS:
             return 2;
         default:
             return 0;

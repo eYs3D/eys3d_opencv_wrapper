@@ -252,7 +252,7 @@ void init_device(){
 
 int open_device(bool is_point_cloud){
 	if(!device)
-		return ETronDI_NoDevice;
+		return APC_NoDevice;
 	int ret;
 	//prepare color, depth frame
 	config_mode(1);
@@ -307,7 +307,7 @@ int open_device(bool is_point_cloud){
 		         depth_image_callback,
 		         nullptr);
 	}
-	if(ret == ETronDI_OK){
+	if(ret == APC_OK){
 		device->enableStream();
 		printf("\n\nDevice stream enabled\n");
 		gDefaultNear = device->mZDTableInfo.nZDTableMaxNear;

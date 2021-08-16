@@ -19,8 +19,8 @@ typedef enum{
     DEPTH_IMG_COLORFUL_TRANSFER
 }DEPTH_TRANSFER_CTRL;
 
-#define ETronDI_ZD_TABLE_FILE_SIZE_11_BITS		4096
-#define ETronDI_ZD_TABLE_FILE_SIZE_8_BITS		512
+#define APC_ZD_TABLE_FILE_SIZE_11_BITS		4096
+#define APC_ZD_TABLE_FILE_SIZE_8_BITS		512
 #define PATH_MAX 260
 // for Sensor mode +
 typedef enum
