@@ -26,7 +26,7 @@ CameraOpenConfig get_mode_config(int mode)
     unsigned short pid = unity_device->getCameraDeviceInfo().devInfo.wPID;
     modeConfigOptions = unity_device->getModeConfigOptions(currentUSBType, pid);
     for (auto& modeItem : modeConfigOptions->GetModes()) {
-        if (modeItem.iMode == mode && ETronDI_OK == modeConfigOptions->SelectCurrentIndex(mode)) {
+        if (modeItem.iMode == mode && APC_OK == modeConfigOptions->SelectCurrentIndex(mode)) {
             LOG_INFO(LOG_TAG, "Found index = %d\n", mode);
             break;
         }
@@ -65,11 +65,11 @@ CameraOpenConfig get_mode_config(int mode)
     }
 
     if (unity_device->getCameraDeviceInfo().devInfo.wPID == 0x120 && unity_mode_config.D_Resolution.Height == 360) {
-        unity_depth_raw_data_type = static_cast<DEPTH_RAW_DATA_TYPE>(unity_depth_raw_data_type + ETronDI_DEPTH_DATA_SCALE_DOWN_MODE_OFFSET);
+        unity_depth_raw_data_type = static_cast<DEPTH_RAW_DATA_TYPE>(unity_depth_raw_data_type + APC_DEPTH_DATA_SCALE_DOWN_MODE_OFFSET);
     }
 
     if (isInterleave) {
-        unity_depth_raw_data_type = static_cast<DEPTH_RAW_DATA_TYPE>(unity_depth_raw_data_type + ETronDI_DEPTH_DATA_INTERLEAVE_MODE_OFFSET);
+        unity_depth_raw_data_type = static_cast<DEPTH_RAW_DATA_TYPE>(unity_depth_raw_data_type + APC_DEPTH_DATA_INTERLEAVE_MODE_OFFSET);
     }
 
     config.videoMode = unity_depth_raw_data_type;
@@ -142,7 +142,7 @@ int open_device(CameraOpenConfig config)
                                               IMAGE_SN_SYNC,
                                               0);
     unity_device->enableStream();
-    return (unity_pipeline != nullptr) ? ETronDI_OK : ETronDI_Init_Fail;
+    return (unity_pipeline != nullptr) ? APC_OK : APC_Init_Fail;
 }
 
 
@@ -174,7 +174,7 @@ void release_device(void)
 
 int set_fw_register(unsigned short address, unsigned short value)
 {
-    if (unity_device == nullptr) return ETronDI_Init_Fail;
+    if (unity_device == nullptr) return APC_Init_Fail;
 
     return unity_device->setFWRegister(address, value);
 }
@@ -196,7 +196,7 @@ PCFrame mPcFrame = {0};
 int generate_point_cloud_gpu(unsigned char *colorData, unsigned char *depthData,
                              unsigned char *colorOut, int* colorCapacity, float* depthOut, int* depthCapacity)
 {
-    if (!colorData || !depthData || !colorOut || !colorCapacity || !depthOut|| !depthCapacity) return ETronDI_NullPtr;
+    if (!colorData || !depthData || !colorOut || !colorCapacity || !depthOut|| !depthCapacity) return APC_NullPtr;
 
     int ret = unity_pipeline->waitForPCFrame(&mPcFrame, 0 /* Forever */);
 
@@ -220,7 +220,7 @@ void enable_AE() {
 }
 
 int get_AE_status() {
-     if (unity_device == nullptr) return ETronDI_Init_Fail;
+     if (unity_device == nullptr) return APC_Init_Fail;
      auto property = unity_device->getCameraDeviceProperty(libeYs3D::devices::CameraDeviceProperties::CAMERA_PROPERTY::AUTO_EXPOSURE);
      auto nValue = property.nValue;
      return nValue;
@@ -237,7 +237,7 @@ void enable_AWB() {
 }
 
 int get_AWB_status() {
-    if (unity_device == nullptr) return ETronDI_Init_Fail;
+    if (unity_device == nullptr) return APC_Init_Fail;
     auto property = unity_device->getCameraDeviceProperty(libeYs3D::devices::CameraDeviceProperties::CAMERA_PROPERTY::AUTO_WHITE_BLANCE);
     auto nValue = property.nValue;
     return nValue;
@@ -249,14 +249,14 @@ void getDepthOfField(uint16_t *GetZNear, uint16_t *GetZFar) {
 }
 
 int get_IR_min_value() {
-    if (unity_device == nullptr) return ETronDI_Init_Fail;
+    if (unity_device == nullptr) return APC_Init_Fail;
     libeYs3D::devices::IRProperty property = unity_device->getIRProperty();
     int ir_min = property.getIRMin();
     return ir_min;
 }
 
 int get_IR_max_value() {
-    if (unity_device == nullptr) return ETronDI_Init_Fail;
+    if (unity_device == nullptr) return APC_Init_Fail;
     libeYs3D::devices::IRProperty property = unity_device->getIRProperty();
     int ir_max = property.getIRMax();
     return ir_max;
