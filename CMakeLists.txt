@@ -6,6 +6,8 @@ if (CMAKE_HOST_WIN32)
     message("Windows build begin")
 endif()
 
+include(cmake/update_git_submodules.cmake)
+
 if(WINDOWS)
     add_compile_options(-fPIC)
     add_definitions("$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")

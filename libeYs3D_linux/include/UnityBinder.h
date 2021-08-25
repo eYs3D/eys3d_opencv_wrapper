@@ -26,7 +26,7 @@ typedef struct {
 
 extern "C" {
 #ifdef WIN32
-int TransformDepthDataType(int depth_raw_data_type , int bRectifyMode , unsigned short wPID , int depthHeight);
+int TransformDepthDataType(int depth_raw_data_type , int bRectifyMode , unsigned short wPID , int depthWidth , int depthHeight);
 CameraOpenConfig get_mode_config_by_pif(int pif);
 int get_pif();
 CameraOpenConfig get_config();

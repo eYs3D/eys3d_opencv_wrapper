@@ -11,6 +11,7 @@
 #include <ctime>
 
 #ifdef WIN32
+#  include <winsock.h>
 #  include "eSPDI_Common.h"
 #else
 #  include "eSPDI_def.h"

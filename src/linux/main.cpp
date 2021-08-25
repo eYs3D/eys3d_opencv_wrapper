@@ -1261,7 +1261,10 @@ void point_cloud_view() {
     //eSPDI camera open
     ret = open_device(config);
     cout << "\nopen_device:"<< ret << endl;
-
+    if (ret != 0) {
+        cout << "open devices failed"<< endl;
+        return;
+    }
     char item_input;
     cout << "\nTurn on IR (Y/N):" << endl;
     cin >> item_input;
@@ -1293,49 +1296,49 @@ void point_cloud_view() {
         //eSPDI camera get frame
         int count = 0;
         vector<CloudPoint> cloudPoint;
-        if (ret == 0) {
-            int pcl_depth_size = config.colorWidth * config.colorHeight * 3;
-            int pcl_color_size = config.colorWidth * config.colorHeight * 3;
-            int pcl_depth_byte, pcl_color_byte;
 
-            ret = generate_point_cloud_gpu(color_frame, depth_frame,
-                                           color_frame_out, &pcl_depth_byte,
-                                           depth_frame_out, &pcl_color_byte);
+        int pcl_depth_size = config.colorWidth * config.colorHeight * 3;
+        int pcl_color_size = config.colorWidth * config.colorHeight * 3;
+        int pcl_depth_byte, pcl_color_byte;
 
-            for (int i = 0 ; i < pcl_depth_size; i+=3) {
-                if (depth_frame_out[i] != 0 && depth_frame_out[i+1] != 0 && depth_frame_out[i+2] !=0) {
-                    struct CloudPoint cloudpoint = { depth_frame_out[i], depth_frame_out[i+ 1], depth_frame_out[i+2],
-                     color_frame_out[i], color_frame_out[i+ 1], color_frame_out[i+2]};
-                    cloudPoint.push_back(cloudpoint);
-                }
+        ret = generate_point_cloud_gpu(color_frame, depth_frame,
+                                       color_frame_out, &pcl_depth_byte,
+                                       depth_frame_out, &pcl_color_byte);
+        //cout << "\ngenerate_point_cloud_gpu:" <<ret << endl;
+
+        for (int i = 0 ; i < pcl_depth_size; i+=3) {
+            if (depth_frame_out[i] != 0 && depth_frame_out[i+1] != 0 && depth_frame_out[i+2] !=0) {
+                struct CloudPoint cloudpoint = { depth_frame_out[i], depth_frame_out[i+ 1], depth_frame_out[i+2],
+                 color_frame_out[i], color_frame_out[i+ 1], color_frame_out[i+2]};
+                cloudPoint.push_back(cloudpoint);
             }
-
-            if (count <= 0) {
-                PlyWriter::writePly(cloudPoint, "123.ply");
-                count++;
-            }
-            vector<cv::Point3f> m3Dpoints;
-            vector<cv::Vec3b> m3Dbgr;
-            for (int i = 0; i < cloudPoint.size() ; i++) {
-                cv::Point3f point3f;
-                point3f.x = cloudPoint[i].x;
-                point3f.y = (-cloudPoint[i].y);
-                point3f.z = (-cloudPoint[i].z);
-                m3Dpoints.push_back(point3f);
-
-                cv::Vec3b pix_rgb;
-                pix_rgb[0] = cloudPoint[i].b;
-                pix_rgb[1] = cloudPoint[i].g;
-                pix_rgb[2] = cloudPoint[i].r;
-                m3Dbgr.push_back(pix_rgb);
-
-            }
-            cv::Mat point_cloud { m3Dpoints };
-            cv::Mat color_cloud { m3Dbgr };
-            cv::viz::WCloud cloud_widget(point_cloud, color_cloud);
-            window.showWidget( "window", cloud_widget );
-            window.spinOnce();
         }
+
+        if (count <= 0) {
+            PlyWriter::writePly(cloudPoint, "123.ply");
+            count++;
+        }
+        vector<cv::Point3f> m3Dpoints;
+        vector<cv::Vec3b> m3Dbgr;
+        for (int i = 0; i < cloudPoint.size() ; i++) {
+            cv::Point3f point3f;
+            point3f.x = cloudPoint[i].x;
+            point3f.y = (-cloudPoint[i].y);
+            point3f.z = (-cloudPoint[i].z);
+            m3Dpoints.push_back(point3f);
+
+            cv::Vec3b pix_rgb;
+            pix_rgb[0] = cloudPoint[i].b;
+            pix_rgb[1] = cloudPoint[i].g;
+            pix_rgb[2] = cloudPoint[i].r;
+            m3Dbgr.push_back(pix_rgb);
+
+        }
+        cv::Mat point_cloud { m3Dpoints };
+        cv::Mat color_cloud { m3Dbgr };
+        cv::viz::WCloud cloud_widget(point_cloud, color_cloud);
+        window.showWidget( "window", cloud_widget );
+        window.spinOnce();
     }
     cout << "\nstop color streaming... " << endl;
     //destroy and release
@@ -1374,6 +1377,10 @@ void point_cloud_view_with_opengl() {
            config.colorFormat, config.colorWidth, config.colorHeight, config.fps, config.depthWidth, config.depthHeight, config.videoMode);
     ret = open_device(config);
     cout << "\nopen_device:" << ret << endl;
+    if (ret != 0) {
+        cout << "open devices failed"<< endl;
+        return;
+    }
 
     char item_input;
     cout << "\nTurn on IR (Y/N):" << endl;
@@ -1418,21 +1425,21 @@ void point_cloud_view_with_opengl() {
         //eSPDI camera get frame
         int count = 0;
         vector<CloudPoint> cloudPoint;
-        if (ret == 0)
-        {
-            int pcl_depth_size = config.colorWidth * config.colorHeight * 3 * sizeof(float);
-            int pcl_color_size = config.colorWidth * config.colorHeight * 3 * sizeof(BYTE);
-            ret = generate_point_cloud_gpu(color_frame, depth_frame,
-                                           color_frame_out, &pcl_color_size,
-                                           depth_frame_out, &pcl_depth_size);
 
-            point_num = (pcl_depth_size / sizeof(float)) / 3;
-            glBindBuffer(GL_ARRAY_BUFFER, gVerticesBuffer);
-            glBufferData(GL_ARRAY_BUFFER, point_num * 3 * sizeof(float), &depth_frame_out[0], GL_STATIC_DRAW);
+        int pcl_depth_size = config.colorWidth * config.colorHeight * 3 * sizeof(float);
+        int pcl_color_size = config.colorWidth * config.colorHeight * 3 * sizeof(BYTE);
+        ret = generate_point_cloud_gpu(color_frame, depth_frame,
+                                       color_frame_out, &pcl_color_size,
+                                       depth_frame_out, &pcl_depth_size);
+        //cout << "\ngenerate_point_cloud_gpu:" <<ret << endl;
 
-            glBindBuffer(GL_ARRAY_BUFFER, gColorBuffer);
-            glBufferData(GL_ARRAY_BUFFER, point_num * 3 * sizeof(uchar), &color_frame_out[0], GL_STATIC_DRAW);
-        }
+        point_num = (pcl_depth_size / sizeof(float)) / 3;
+        glBindBuffer(GL_ARRAY_BUFFER, gVerticesBuffer);
+        glBufferData(GL_ARRAY_BUFFER, point_num * 3 * sizeof(float), &depth_frame_out[0], GL_STATIC_DRAW);
+
+        glBindBuffer(GL_ARRAY_BUFFER, gColorBuffer);
+        glBufferData(GL_ARRAY_BUFFER, point_num * 3 * sizeof(uchar), &color_frame_out[0], GL_STATIC_DRAW);
+
 
         cv::updateWindow(point_cloud_wd.id);
         k = cv::waitKey(1);

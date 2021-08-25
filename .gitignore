@@ -4,3 +4,8 @@ cmake-build-debug/*
 bin/
 sdk_out/*
 logs/
+frames/
+imu_log/
+readregisterlogs/
+snapshots/
+video_recording/

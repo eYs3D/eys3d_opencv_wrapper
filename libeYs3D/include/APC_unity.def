@@ -67,6 +67,7 @@ EXPORTS
 	??_R0?AVCameraDevice8053@devices@libeYs3D@@@8 	 DATA
 	??_R0?AVCameraDevice8059@devices@libeYs3D@@@8 	 DATA
 	??_R0?AVCameraDevice8062@devices@libeYs3D@@@8 	 DATA
+	??_R0?AVCameraDevice8067@devices@libeYs3D@@@8 	 DATA
 	??_R0?AVCameraDevice@devices@libeYs3D@@@8 	 DATA
 	??_R0?AVCameraDeviceHypatia@devices@libeYs3D@@@8 	 DATA
 	??_R0?AVColorFrameProducer@video@libeYs3D@@@8 	 DATA
@@ -108,6 +109,7 @@ EXPORTS
 	?gDefaultNear@@3GA 	 DATA
 	?gDepthImgSize@@3_KA 	 DATA
 	?gDepthSerial@@3IA 	 DATA
+	?gGlobalState@?A0xa7fd18e7@base@libeYs3D@@3U?$LazyInstance@VGlobalState@?A0xa7fd18e7@base@libeYs3D@@@23@A 	 DATA
 	?gPCRGBSize@@3_KA 	 DATA
 	?gPCSerial@@3IA 	 DATA
 	?gPCXYZSize@@3_KA 	 DATA
@@ -158,6 +160,7 @@ EXPORTS
 	??$<move>@AEAV<lambda_dbbb479bfc9ffc0a9f130fbf77aabe71>@@@@YA$$QEAV<lambda_dbbb479bfc9ffc0a9f130fbf77aabe71>@@AEAV0@@Z
 	??$?6U?$char_traits@D@std@@@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@D@Z
 	??$?6U?$char_traits@D@std@@@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@PEBD@Z
+	??$?9_K@base@libeYs3D@@YA_NAEB_KAEBV?$Optional@_K@01@@Z
 	??$?IW4ThreadFlags@base@libeYs3D@@@EnumFlags@base@libeYs3D@@YA?AW4ThreadFlags@12@W4312@0@Z
 	??$?UW4ThreadFlags@base@libeYs3D@@@EnumFlags@base@libeYs3D@@YA?AW4ThreadFlags@12@W4312@0@Z
 	??$_Buynode@$$V@?$_List_buy@V?$vector@FV?$allocator@F@std@@@std@@V?$allocator@V?$vector@FV?$allocator@F@std@@@std@@@2@@std@@QEAAPEAU?$_List_node@V?$vector@FV?$allocator@F@std@@@std@@PEAX@1@PEAU21@0@Z
@@ -209,8 +212,8 @@ EXPORTS
 	??$_Range_construct_or_tidy@PEBW4IMU_DATA_FORMAT@IMUDevice@devices@libeYs3D@@@?$vector@W4IMU_DATA_FORMAT@IMUDevice@devices@libeYs3D@@V?$allocator@W4IMU_DATA_FORMAT@IMUDevice@devices@libeYs3D@@@std@@@std@@AEAAXPEBW4IMU_DATA_FORMAT@IMUDevice@devices@libeYs3D@@0Uforward_iterator_tag@1@@Z
 	??$_Reallocate_grow_by@V<lambda_319d5e083f45f90dcdce5dce53cbb275>@@D@?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QEAAAEAV01@_KV<lambda_319d5e083f45f90dcdce5dce53cbb275>@@D@Z
 	??$_Reallocate_grow_by@V<lambda_65e615be2a453ca0576c979606f46740>@@PEBD_K@?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QEAAAEAV01@_KV<lambda_65e615be2a453ca0576c979606f46740>@@PEBD_K@Z
-	??$_Resize@V<lambda_1a6e53926ee1cfde4f3433b1896543b9>@@@?$vector@UtagAPC_STREAM_INFO@@V?$allocator@UtagAPC_STREAM_INFO@@@std@@@std@@AEAAX_KV<lambda_1a6e53926ee1cfde4f3433b1896543b9>@@@Z
 	??$_Resize@V<lambda_1b1d21d4d0a625f2ca46306f492426c3>@@@?$vector@GV?$allocator@G@std@@@std@@AEAAX_KV<lambda_1b1d21d4d0a625f2ca46306f492426c3>@@@Z
+	??$_Resize@V<lambda_24780451169aff7b21d8dc81a5c8ea5e>@@@?$vector@UtagAPC_STREAM_INFO@@V?$allocator@UtagAPC_STREAM_INFO@@@std@@@std@@AEAAX_KV<lambda_24780451169aff7b21d8dc81a5c8ea5e>@@@Z
 	??$_Resize@V<lambda_2b51424039c320f102fd798e073c89b2>@@@?$vector@EV?$allocator@E@std@@@std@@AEAAX_KV<lambda_2b51424039c320f102fd798e073c89b2>@@@Z
 	??$_Resize@V<lambda_5d91c21a7dab2480088f44d5291e9dfa>@@@?$vector@GV?$allocator@G@std@@@std@@AEAAX_KV<lambda_5d91c21a7dab2480088f44d5291e9dfa>@@@Z
 	??$_Resize@V<lambda_74be05070710ffacd29b9292ee44c745>@@@?$vector@FV?$allocator@F@std@@@std@@AEAAX_KV<lambda_74be05070710ffacd29b9292ee44c745>@@@Z
@@ -274,6 +277,7 @@ EXPORTS
 	??0CameraDevice8053@devices@libeYs3D@@IEAA@PEAUtagDEVSEL@@PEAUtagDEVINFORMATION@@@Z
 	??0CameraDevice8059@devices@libeYs3D@@IEAA@PEAUtagDEVSEL@@PEAUtagDEVINFORMATION@@@Z
 	??0CameraDevice8062@devices@libeYs3D@@IEAA@PEAUtagDEVSEL@@PEAUtagDEVINFORMATION@@@Z
+	??0CameraDevice8067@devices@libeYs3D@@IEAA@PEAUtagDEVSEL@@PEAUtagDEVINFORMATION@@@Z
 	??0CameraDevice@devices@libeYs3D@@IEAA@PEAUtagDEVSEL@@PEAUtagDEVINFORMATION@@@Z
 	??0CameraDeviceHypatia@devices@libeYs3D@@IEAA@PEAUtagDEVSEL@@PEAUtagDEVINFORMATION@@@Z
 	??0CameraDeviceProperties@devices@libeYs3D@@IEAA@PEAVCameraDevice@12@@Z
@@ -400,6 +404,7 @@ EXPORTS
 	??1?$vector@V?$Optional@V?$WorkerThread@V?$Optional@VDACalculateWorkItem@video@libeYs3D@@@base@libeYs3D@@@base@libeYs3D@@@base@libeYs3D@@V?$allocator@V?$Optional@V?$WorkerThread@V?$Optional@VDACalculateWorkItem@video@libeYs3D@@@base@libeYs3D@@@base@libeYs3D@@@base@libeYs3D@@@std@@@std@@QEAA@XZ
 	??1?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@QEAA@XZ
 	??1AutoLock@base@libeYs3D@@QEAA@XZ
+	??1AutoWriteLock@base@libeYs3D@@QEAA@XZ
 	??1CallbackWorkItem@video@libeYs3D@@QEAA@XZ
 	??1CameraDevice8036@devices@libeYs3D@@UEAA@XZ
 	??1CameraDevice8037@devices@libeYs3D@@UEAA@XZ
@@ -407,6 +412,7 @@ EXPORTS
 	??1CameraDevice8053@devices@libeYs3D@@UEAA@XZ
 	??1CameraDevice8059@devices@libeYs3D@@UEAA@XZ
 	??1CameraDevice8062@devices@libeYs3D@@UEAA@XZ
+	??1CameraDevice8067@devices@libeYs3D@@UEAA@XZ
 	??1CameraDevice@devices@libeYs3D@@UEAA@XZ
 	??1CameraDeviceHypatia@devices@libeYs3D@@UEAA@XZ
 	??1CameraDeviceProperties@devices@libeYs3D@@QEAA@XZ
@@ -1025,6 +1031,7 @@ EXPORTS
 	?getZDTableIndex@CameraDevice8053@devices@libeYs3D@@MEAAHXZ
 	?getZDTableIndex@CameraDevice8059@devices@libeYs3D@@MEAAHXZ
 	?getZDTableIndex@CameraDevice8062@devices@libeYs3D@@MEAAHXZ
+	?getZDTableIndex@CameraDevice8067@devices@libeYs3D@@MEAAHXZ
 	?getZDTableIndex@CameraDevice@devices@libeYs3D@@MEAAHXZ
 	?getZDTableIndex@CameraDeviceHypatia@devices@libeYs3D@@MEAAHXZ
 	?getZDTableSize@CameraDevice@devices@libeYs3D@@MEAAHXZ
@@ -1059,6 +1066,7 @@ EXPORTS
 	?initStream@CameraDevice8053@devices@libeYs3D@@UEAAHW4COLOR_RAW_DATA_TYPE@video@3@HHHW4DEPTH_RAW_DATA_TYPE@53@HHW4DEPTH_TRANSFER_CTRL@@W4CONTROL_MODE@@HV?$function@$$A6A_NPEBVFrame@video@libeYs3D@@@Z@std@@4V?$function@$$A6A_NPEBVPCFrame@video@libeYs3D@@@Z@std@@V?$function@$$A6A_NPEBUSensorData@sensors@libeYs3D@@@Z@std@@@Z
 	?initStream@CameraDevice8059@devices@libeYs3D@@UEAAHW4COLOR_RAW_DATA_TYPE@video@3@HHHW4DEPTH_RAW_DATA_TYPE@53@HHW4DEPTH_TRANSFER_CTRL@@W4CONTROL_MODE@@HV?$function@$$A6A_NPEBVFrame@video@libeYs3D@@@Z@std@@4V?$function@$$A6A_NPEBVPCFrame@video@libeYs3D@@@Z@std@@V?$function@$$A6A_NPEBUSensorData@sensors@libeYs3D@@@Z@std@@@Z
 	?initStream@CameraDevice8062@devices@libeYs3D@@UEAAHW4COLOR_RAW_DATA_TYPE@video@3@HHHW4DEPTH_RAW_DATA_TYPE@53@HHW4DEPTH_TRANSFER_CTRL@@W4CONTROL_MODE@@HV?$function@$$A6A_NPEBVFrame@video@libeYs3D@@@Z@std@@4V?$function@$$A6A_NPEBVPCFrame@video@libeYs3D@@@Z@std@@V?$function@$$A6A_NPEBUSensorData@sensors@libeYs3D@@@Z@std@@@Z
+	?initStream@CameraDevice8067@devices@libeYs3D@@UEAAHW4COLOR_RAW_DATA_TYPE@video@3@HHHW4DEPTH_RAW_DATA_TYPE@53@HHW4DEPTH_TRANSFER_CTRL@@W4CONTROL_MODE@@HV?$function@$$A6A_NPEBVFrame@video@libeYs3D@@@Z@std@@4V?$function@$$A6A_NPEBVPCFrame@video@libeYs3D@@@Z@std@@V?$function@$$A6A_NPEBUSensorData@sensors@libeYs3D@@@Z@std@@@Z
 	?initStream@CameraDevice@devices@libeYs3D@@QEAA?AV?$shared_ptr@VPipeline@devices@libeYs3D@@@std@@W4COLOR_RAW_DATA_TYPE@video@3@HHHW4DEPTH_RAW_DATA_TYPE@73@HHW4DEPTH_TRANSFER_CTRL@@W4CONTROL_MODE@@H@Z
 	?initStream@CameraDevice@devices@libeYs3D@@UEAAHW4COLOR_RAW_DATA_TYPE@video@3@HHHW4DEPTH_RAW_DATA_TYPE@53@HHW4DEPTH_TRANSFER_CTRL@@W4CONTROL_MODE@@HV?$function@$$A6A_NPEBVFrame@video@libeYs3D@@@Z@std@@4V?$function@$$A6A_NPEBVPCFrame@video@libeYs3D@@@Z@std@@V?$function@$$A6A_NPEBUSensorData@sensors@libeYs3D@@@Z@std@@@Z
 	?initStream@CameraDeviceHypatia@devices@libeYs3D@@UEAAHW4COLOR_RAW_DATA_TYPE@video@3@HHHW4DEPTH_RAW_DATA_TYPE@53@HHW4DEPTH_TRANSFER_CTRL@@W4CONTROL_MODE@@HV?$function@$$A6A_NPEBVFrame@video@libeYs3D@@@Z@std@@4V?$function@$$A6A_NPEBVPCFrame@video@libeYs3D@@@Z@std@@V?$function@$$A6A_NPEBUSensorData@sensors@libeYs3D@@@Z@std@@@Z
@@ -1089,12 +1097,14 @@ EXPORTS
 	?isInterleaveModeSupported@CameraDevice8053@devices@libeYs3D@@UEAA_NXZ
 	?isInterleaveModeSupported@CameraDevice8059@devices@libeYs3D@@UEAA_NXZ
 	?isInterleaveModeSupported@CameraDevice8062@devices@libeYs3D@@UEAA_NXZ
+	?isInterleaveModeSupported@CameraDevice8067@devices@libeYs3D@@UEAA_NXZ
 	?isInterleaveModeSupported@CameraDevice@devices@libeYs3D@@UEAA_NXZ
 	?isPlyFilterSupported@CameraDevice@devices@libeYs3D@@UEAA_NXZ
 	?isStopped@MessageChannelBase@base@libeYs3D@@QEBA_NXZ
 	?isStreamEnabled@IMUDevice@devices@libeYs3D@@QEAA_NXZ
 	?isValid@IMUDevice@devices@libeYs3D@@MEAA_NXZ
 	?is_big_endian@@YAHXZ
+	?join@?$ThreadPool@VDACalculateWorkItem@video@libeYs3D@@@base@libeYs3D@@QEAAXXZ
 	?logIMUDataRecord@IMUDevice@devices@libeYs3D@@AEAAXPEAEH@Z
 	?logProducerTick@ColorFrameProducer@video@libeYs3D@@MEAAXPEBDZZ
 	?logProducerTick@DepthFrameProducer@video@libeYs3D@@MEAAXPEBDZZ
@@ -1181,6 +1191,7 @@ EXPORTS
 	?releaseIMUDevice@CameraDevice@devices@libeYs3D@@MEAAXXZ
 	?reloadCameraDeviceProperties@CameraDevice@devices@libeYs3D@@UEAAHXZ
 	?resampleImage@PlyWriter@@SAXHHPEAEHH0H@Z
+	?reset@?$CircularQueue@VFrame@video@libeYs3D@@$0EA@@Pipeline@devices@libeYs3D@@QEAAXXZ
 	?reset@CameraDeviceProperties@devices@libeYs3D@@QEAAHXZ
 	?reset@Pipeline@devices@libeYs3D@@QEAAXXZ
 	?reset@SensorDataSet@sensors@libeYs3D@@QEAAXXZ
@@ -1251,6 +1262,9 @@ EXPORTS
 	?start@?$ThreadPool@VCallbackWorkItem@video@libeYs3D@@@base@libeYs3D@@QEAA_NXZ
 	?start@Thread@base@libeYs3D@@QEAA_NXZ
 	?startCalibration@IMUDevice@devices@libeYs3D@@UEAAXXZ
+	?stop@?$CircularQueue@USensorData@sensors@libeYs3D@@$0BAA@@Pipeline@devices@libeYs3D@@QEAAXXZ
+	?stop@?$CircularQueue@VFrame@video@libeYs3D@@$0EA@@Pipeline@devices@libeYs3D@@QEAAXXZ
+	?stop@?$CircularQueue@VPCFrame@video@libeYs3D@@$0CA@@Pipeline@devices@libeYs3D@@QEAAXXZ
 	?stop@FrameProducer@video@libeYs3D@@UEAAXXZ
 	?stop@FrameSetPipeline@devices@libeYs3D@@AEAAXXZ
 	?stop@MessageChannelBase@base@libeYs3D@@QEAAXXZ
@@ -1329,6 +1343,7 @@ EXPORTS
 	close_device
 	enableExtendIR
 	fprintf
+	fprintf
 	generate_point_cloud_gpu
 	getDefaultZFar
 	getDefaultZNear
@@ -1338,6 +1353,7 @@ EXPORTS
 	get_depth_by_coordinate
 	get_depth_frame
 	get_mode_config_by_pif
+	get_pif
 	get_pif
 	hid_close
 	hid_enumerate
@@ -1360,11 +1376,14 @@ EXPORTS
 	init_device
 	open_device
 	printf
+	printf
 	regenerate_palette
 	release_device
 	reset_palette
 	setupIR
+	setupIR
 	snprintf
+	sprintf
 	sprintf
 	sqlite3_aggregate_context
 	sqlite3_aggregate_count
@@ -1620,5 +1639,6 @@ EXPORTS
 	sqlite3_win32_utf8_to_mbcs_v2
 	sqlite3_win32_utf8_to_unicode
 	sqlite3_win32_write_debug
+	sscanf
 	sscanf
 	vsnprintf

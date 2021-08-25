@@ -1,6 +1,6 @@
 ## Support platforms
-* Linux - X64
-* Windows - X64
+* Linux 18.04 - X64
+* Windows 10 - X64
 
 ## Release eYs3D OpenCV SDK
 For Linux:  
@@ -8,7 +8,8 @@ For Linux:
 
 ## Build eYs3D OpenCV SDK
 For Linux:  
-`./build.sh`  
+ * Run `set_env.sh` to set your environment
+ * Run `./build.sh`  
 
 For Windows:  
  * Make sure that your environment variables support MSBuild before running `build.bat`. 

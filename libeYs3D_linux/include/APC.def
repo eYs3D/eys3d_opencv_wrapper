@@ -4071,13 +4071,13 @@ EXPORTS
 	?erase@?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QEAAAEAV12@_K_K@Z
 	?erase@?$list@V?$vector@FV?$allocator@F@std@@@std@@V?$allocator@V?$vector@FV?$allocator@F@std@@@std@@@2@@std@@QEAA?AV?$_List_iterator@V?$_List_val@U?$_List_simple_types@V?$vector@FV?$allocator@F@std@@@std@@@std@@@std@@@2@V?$_List_const_iterator@V?$_List_val@U?$_List_simple_types@V?$vector@FV?$allocator@F@std@@@std@@@std@@@std@@@2@@Z
 	?erase@?$vector@UtagAPC_STREAM_INFO@@V?$allocator@UtagAPC_STREAM_INFO@@@std@@@std@@QEAA?AV?$_Vector_iterator@V?$_Vector_val@U?$_Simple_types@UtagAPC_STREAM_INFO@@@std@@@std@@@2@V?$_Vector_const_iterator@V?$_Vector_val@U?$_Simple_types@UtagAPC_STREAM_INFO@@@std@@@std@@@2@0@Z
-	?etronFrameTo3D@PlyWriter@@SAHHHAEAV?$vector@EV?$allocator@E@std@@@std@@HH0PEAUeSPCtrl_RectLogData@@W4Value@APCImageType@@AEAV?$vector@UCloudPoint@@V?$allocator@UCloudPoint@@@std@@@3@_NMM44M@Z
-	?etronFrameTo3DCylinder@PlyWriter@@SAHHHAEAV?$vector@EV?$allocator@E@std@@@std@@HH0PEAUeSPCtrl_RectLogData@@1W4Value@APCImageType@@AEAV?$vector@UCloudPoint@@V?$allocator@UCloudPoint@@@std@@@3@_NMM4M@Z
-	?etronFrameTo3DCylinder@PlyWriter@@SAHHHAEAV?$vector@EV?$allocator@E@std@@@std@@HH0PEAUeSPCtrl_RectLogData@@W4Value@APCImageType@@AEAV?$vector@UCloudPoint@@V?$allocator@UCloudPoint@@@std@@@3@_NMM4M@Z
-	?etronFrameTo3DMultiSensor@PlyWriter@@SAHHHAEAV?$vector@EV?$allocator@E@std@@@std@@HH0PEAUeSPCtrl_RectLogData@@1W4Value@APCImageType@@AEAV?$vector@UCloudPoint@@V?$allocator@UCloudPoint@@@std@@@3@_NMM44MH@Z
-	?etronFrameTo3DMultiSensorPlyFilterFloat@PlyWriter@@SAHHHAEAV?$vector@MV?$allocator@M@std@@@std@@HHAEAV?$vector@EV?$allocator@E@std@@@3@PEAUeSPCtrl_RectLogData@@2W4Value@APCImageType@@AEAV?$vector@UCloudPoint@@V?$allocator@UCloudPoint@@@std@@@3@_NMM55MH@Z
-	?etronFrameTo3D_8029@PlyWriter@@SAHHHAEAV?$vector@EV?$allocator@E@std@@@std@@HH0PEAUeSPCtrl_RectLogData@@W4Value@APCImageType@@AEAV?$vector@UCloudPoint@@V?$allocator@UCloudPoint@@@std@@@3@_NMM44M@Z
-	?etronFrameTo3D_PlyFilterFloat@PlyWriter@@SAHHHAEAV?$vector@MV?$allocator@M@std@@@std@@HHAEAV?$vector@EV?$allocator@E@std@@@3@PEAUeSPCtrl_RectLogData@@W4Value@APCImageType@@AEAV?$vector@UCloudPoint@@V?$allocator@UCloudPoint@@@std@@@3@_NMM55M@Z
+	?apcFrameTo3D@PlyWriter@@SAHHHAEAV?$vector@EV?$allocator@E@std@@@std@@HH0PEAUeSPCtrl_RectLogData@@W4Value@APCImageType@@AEAV?$vector@UCloudPoint@@V?$allocator@UCloudPoint@@@std@@@3@_NMM44M@Z
+	?apcFrameTo3DCylinder@PlyWriter@@SAHHHAEAV?$vector@EV?$allocator@E@std@@@std@@HH0PEAUeSPCtrl_RectLogData@@1W4Value@APCImageType@@AEAV?$vector@UCloudPoint@@V?$allocator@UCloudPoint@@@std@@@3@_NMM4M@Z
+	?apcFrameTo3DCylinder@PlyWriter@@SAHHHAEAV?$vector@EV?$allocator@E@std@@@std@@HH0PEAUeSPCtrl_RectLogData@@W4Value@APCImageType@@AEAV?$vector@UCloudPoint@@V?$allocator@UCloudPoint@@@std@@@3@_NMM4M@Z
+	?apcFrameTo3DMultiSensor@PlyWriter@@SAHHHAEAV?$vector@EV?$allocator@E@std@@@std@@HH0PEAUeSPCtrl_RectLogData@@1W4Value@APCImageType@@AEAV?$vector@UCloudPoint@@V?$allocator@UCloudPoint@@@std@@@3@_NMM44MH@Z
+	?apcFrameTo3DMultiSensorPlyFilterFloat@PlyWriter@@SAHHHAEAV?$vector@MV?$allocator@M@std@@@std@@HHAEAV?$vector@EV?$allocator@E@std@@@3@PEAUeSPCtrl_RectLogData@@2W4Value@APCImageType@@AEAV?$vector@UCloudPoint@@V?$allocator@UCloudPoint@@@std@@@3@_NMM55MH@Z
+	?apcFrameTo3D_8029@PlyWriter@@SAHHHAEAV?$vector@EV?$allocator@E@std@@@std@@HH0PEAUeSPCtrl_RectLogData@@W4Value@APCImageType@@AEAV?$vector@UCloudPoint@@V?$allocator@UCloudPoint@@@std@@@3@_NMM44M@Z
+	?apcFrameTo3D_PlyFilterFloat@PlyWriter@@SAHHHAEAV?$vector@MV?$allocator@M@std@@@std@@HHAEAV?$vector@EV?$allocator@E@std@@@3@PEAUeSPCtrl_RectLogData@@W4Value@APCImageType@@AEAV?$vector@UCloudPoint@@V?$allocator@UCloudPoint@@@std@@@3@_NMM55M@Z
 	?exchange@@YAHH@Z
 	?exp@@YAMM@Z
 	?fetch_add@_Atomic_int@std@@QEAAHHW4memory_order@2@@Z

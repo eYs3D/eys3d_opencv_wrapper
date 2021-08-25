@@ -1,6 +1,6 @@
 #!/bin/sh
 
-echo "1. Install default environment package (Ubuntu x86_64)"
+echo "1. Install default environment package (Ubuntu 18.04 x86_64)"
 echo "======================================================"
 sudo apt-get update
 sudo apt-get upgrade
@@ -26,6 +26,9 @@ sudo apt install liblog4cplus-dev
 sudo apt install cgroup-tools
 sudo apt install libcgroup-dev
 sudo apt-get install libjpeg9
+sudo apt-get install freeglut3-dev
+sudo apt-get install libvtk6.3-qt
+
 wget -q -O /tmp/libpng12.deb http://mirrors.kernel.org/ubuntu/pool/main/libp/libpng/libpng12-0_1.2.54-1ubuntu1_amd64.deb
 sudo  dpkg -i /tmp/libpng12.deb
 sudo add-apt-repository "deb http://security.ubuntu.com/ubuntu xenial-security main"

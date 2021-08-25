@@ -121,6 +121,7 @@ void config_mode(int pif)
 	      , mode_config.eDecodeType_L, mode_config.L_Resolution.Width, mode_config.L_Resolution.Height, mode_config.D_Resolution.Width, mode_config.D_Resolution.Height
 	      , (mode_config.vecDepthType.size() > 0) ? mode_config.vecDepthType.at(0) : 0, (haveColor) ? mode_config.vecColorFps.at(0) : 0, (haveDepth) ? mode_config.vecDepthFps.size() : 0);
 	printf("mode_config.vecDepthType.size()=%d\n", mode_config.vecDepthType.size());
+	config.depthWidth = mode_config.D_Resolution.Width;
 	config.depthHeight = mode_config.D_Resolution.Height;
 	if(mode_config.vecDepthType.size() == 0)
 		depth_raw_data_type = libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_OFF_RAW;
@@ -153,7 +154,7 @@ void config_mode(int pif)
 						case libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_ILM_11_BITS_COMBINED_RECTIFY:
 							depth_raw_data_type = mode_config.bRectifyMode ? libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_11_BITS : libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_11_BITS_RAW;  break;
 					}
-					if(mCameraDeviceInfo.devInfo.wPID == 0x0120 && config.depthHeight == 360)
+					if((mCameraDeviceInfo.devInfo.wPID == 0x0120 || mCameraDeviceInfo.devInfo.wPID == 0x0137) && config.depthWidth == 640 && config.depthHeight == 360)
 					{
 						depth_raw_data_type = libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_SCALE_DOWN_11_BITS;
 					}
@@ -173,7 +174,7 @@ void config_mode(int pif)
 						case libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_ILM_14_BITS_COMBINED_RECTIFY:
 							depth_raw_data_type = mode_config.bRectifyMode ? libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_14_BITS : libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_14_BITS_RAW;  break;
 					}
-					if(mCameraDeviceInfo.devInfo.wPID == 0x0120 && config.depthHeight == 360)
+					if((mCameraDeviceInfo.devInfo.wPID == 0x0120 || mCameraDeviceInfo.devInfo.wPID == 0x0137) && config.depthWidth == 640 && config.depthHeight == 360)
 					{
 						depth_raw_data_type = libeYs3D::video::DEPTH_RAW_DATA_TYPE::DEPTH_RAW_DATA_SCALE_DOWN_14_BITS;
 					}

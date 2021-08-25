@@ -285,7 +285,10 @@ public:
 	int setFWRegister(unsigned short address, unsigned short nValue);
     unsigned short getSensorRegister(unsigned short address, SENSORMODE_INFO sensorMode, int slaveID);
     int setSensorRegister(unsigned short address, unsigned short nValue, SENSORMODE_INFO sensorMode, int slaveID);
-
+	//++Calibration info
+    int  loadRectifyLogData();
+    std::shared_ptr<eSPCtrl_RectLogData> getRectifyLogData(int rect_index);
+    //--Calibration info
     virtual void release();
     virtual ~CameraDevice();
 
@@ -387,7 +390,11 @@ public:
     int mRectifyLogIndex;
     eSPCtrl_RectLogData mRectifyLogData;
     struct PointCloudInfo mPointCloudInfo;
-    
+
+    //++Calibration info
+     std::vector<std::shared_ptr<eSPCtrl_RectLogData>> mCameraRectifyLogData;
+    //--Calibration info
+
     uint32_t mDepthInvalidBandPixel;
     
     bool mBlockingRead;
