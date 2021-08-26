@@ -157,7 +157,7 @@ if(WINDOWS)
     file(COPY ${VTK_FILES} DESTINATION ${CMAKE_BINARY_DIR}/x64/Release)
     file(GLOB DLL_FILES   "${CMAKE_SOURCE_DIR}/opencv_libs/opencv-3.4.2_vc/lib/*.dll")
     file(COPY ${DLL_FILES} DESTINATION ${CMAKE_BINARY_DIR}/x64/Release)
-    file(COPY ModeConfig.db DESTINATION ${CMAKE_BINARY_DIR}/x64/Release/eYs3D/cfg)
+    #file(COPY ModeConfig.db DESTINATION ${CMAKE_BINARY_DIR}/x64/Release/eYs3D/cfg)
 else()
     target_link_libraries(eys3d_opencv eys3d pthread ${UDEV_LIBRARIES} ${OpenCV_LIBS} ${DEPENDENCIES})
     install(

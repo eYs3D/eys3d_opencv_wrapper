@@ -529,6 +529,24 @@ void color_palette_handle (char input_key, int &count) {
 
 #endif
 
+int get_input_mode() {
+	cout << "\n Input camera mode(reference PIF):" << endl;
+    int input_mode = 0;
+	scanf("%d", &input_mode);
+
+    while (true)
+    {
+        if (input_mode < 0 || input_mode > 100)
+        {
+            cout << "\n Input camera mode(reference PIF):" << endl;
+			scanf("%d", &input_mode);
+        }
+        else
+            break;
+    }
+	return input_mode;
+}
+
 
 int main (int argc, char** argv) {
     show_menu();
@@ -657,7 +675,7 @@ void preview_color_depth() {
     int ret;
     ret = init_device();
     cout << "\ninit_device:"<< ret << endl;
-    CameraOpenConfig config = get_mode_config(5);
+    CameraOpenConfig config = get_mode_config(get_input_mode());
 
     printf("\ncolorFormat %d, colorWidth:%d, colorHeight:%d, fps:%d, depthWidth:%d, depthHeight:%d, videoMode:%d\n",
            config.colorFormat, config.colorWidth, config.colorHeight, config.fps, config.depthWidth, config.depthHeight, config.videoMode);
@@ -798,7 +816,7 @@ void preview_all() {
     int ret;
     ret = init_device();
     cout << "\ninit_device:"<< ret << endl;
-    CameraOpenConfig config = get_mode_config(5);
+    CameraOpenConfig config = get_mode_config(get_input_mode());
 
     printf("\ncolorFormat %d, colorWidth:%d, colorHeight:%d, fps:%d, depthWidth:%d, depthHeight:%d, videoMode:%d\n",
            config.colorFormat, config.colorWidth, config.colorHeight, config.fps, config.depthWidth, config.depthHeight, config.videoMode);
@@ -942,7 +960,7 @@ void face_detect() {
     int ret;
     ret = init_device();
     cout << "\ninit_device:"<< ret << endl;
-    CameraOpenConfig config = get_mode_config(5);
+    CameraOpenConfig config = get_mode_config(get_input_mode());
 
     printf("\ncolorFormat %d, colorWidth:%d, colorHeight:%d, fps:%d, depthWidth:%d, depthHeight:%d, videoMode:%d\n",
            config.colorFormat, config.colorWidth, config.colorHeight, config.fps, config.depthWidth, config.depthHeight, config.videoMode);
@@ -1091,7 +1109,7 @@ void face_mask_detect() {
     int ret;
     ret = init_device();
     cout << "\ninit_device:"<< ret << endl;
-    CameraOpenConfig config = get_mode_config(5);
+    CameraOpenConfig config = get_mode_config(get_input_mode());
 
     printf("\ncolorFormat %d, colorWidth:%d, colorHeight:%d, fps:%d, depthWidth:%d, depthHeight:%d, videoMode:%d\n",
            config.colorFormat, config.colorWidth, config.colorHeight, config.fps, config.depthWidth, config.depthHeight, config.videoMode);
@@ -1244,7 +1262,7 @@ void point_cloud_view() {
     //prepare color, depth frame
     int ret;
     ret = init_device();
-    CameraOpenConfig config = get_mode_config(5);
+    CameraOpenConfig config = get_mode_config(get_input_mode());
 
     int color_size = config.colorWidth * config.colorHeight * 3;
     BYTE* color_frame = new BYTE [color_size];
@@ -1371,7 +1389,7 @@ void point_cloud_view_with_opengl() {
     int ret;
     ret = init_device();
     cout << "\ninit_device:" << ret << endl;
-    CameraOpenConfig config = get_mode_config(5);
+    CameraOpenConfig config = get_mode_config(get_input_mode());
 
     printf("\ncolorFormat %d, colorWidth:%d, colorHeight:%d, fps:%d, depthWidth:%d, depthHeight:%d, videoMode:%d\n",
            config.colorFormat, config.colorWidth, config.colorHeight, config.fps, config.depthWidth, config.depthHeight, config.videoMode);

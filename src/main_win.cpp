@@ -93,6 +93,7 @@ static bool pc_frame_callback(const libeYs3D::video::PCFrame *pcFrame);
 
 void config_mode(int pif)
 {
+	cout << "\nconfig_mode:"<< pif << endl;
 	int i, mode_index;
 	int depth_raw_index = 0, color_fps_index = 0, depth_fps_index = 0;
 	mModeConfigOptions = device->getModeConfigOptions();
@@ -255,8 +256,23 @@ int open_device(bool is_point_cloud){
 	if(!device)
 		return APC_NoDevice;
 	int ret;
+    cout << "\n Input camera mode(reference PIF):" << endl;
+    int input_mode = 0;
+	scanf("%d", &input_mode);
+
+    while (true)
+    {
+        if (input_mode < 0 || input_mode > 100)
+        {
+            cout << "\n Input camera mode(reference PIF):" << endl;
+			scanf("%d", &input_mode);
+        }
+        else
+            break;
+    }
+
 	//prepare color, depth frame
-	config_mode(1);
+	config_mode(input_mode);
     printf("\ncolorFormat %d, colorWidth:%d, colorHeight:%d, fps:%d, depthWidth:%d, depthHeight:%d, videoMode:%d\n",
            config.colorFormat, config.colorWidth, config.colorHeight, config.fps, config.depthWidth, config.depthHeight, config.videoMode);
 	int pcl_depth_size = config.depthWidth * config.depthHeight * 3 * 2 * sizeof(float);
@@ -1161,8 +1177,10 @@ void preview_color_depth() {
     //eSPDI camera open
     int ret = open_device(false);
     cout << "\nopen_device:"<< ret << endl;
-    if(ret < 0)
-    	return;
+    if (ret != 0) {
+        cout << "open devices failed"<< endl;
+        return;
+    }
 
     cout << "\n\npreview_color_depth item\n"<< endl;
     //prepare window
@@ -1271,8 +1289,10 @@ void preview_all() {
     //eSPDI camera open
     int ret = open_device(false);
     cout << "\nopen_device:"<< ret << endl;
-    if(ret < 0)
-    	return;
+    if (ret != 0) {
+        cout << "open devices failed"<< endl;
+        return;
+    }
 
     cout << "\n\npreview_all item\n"<< endl;
     //prepare window
@@ -1421,8 +1441,10 @@ void face_detect() {
     //eSPDI camera open
     int ret = open_device(false);
     cout << "\nopen_device:"<< ret << endl;
-    if(ret < 0)
-    	return;
+    if (ret != 0) {
+        cout << "open devices failed"<< endl;
+        return;
+    }
 
     cout << "\n\nface_detect item\n"<< endl;
     cv::CascadeClassifier face_cascade;
@@ -1565,8 +1587,10 @@ void face_mask_detect() {
     //eSPDI camera open
     int ret = open_device(false);
     cout << "\nopen_device:"<< ret << endl;
-    if(ret < 0)
-    	return;
+    if (ret != 0) {
+        cout << "open devices failed"<< endl;
+        return;
+    }
 
     cout << "\n\nface_mask_detect item\n"<< endl;
     cv::CascadeClassifier face_cascade;
@@ -1795,56 +1819,56 @@ void point_cloud_view() {
         //eSPDI camera get frame
         int count = 0;
         vector<CloudPoint> cloudPoint;
-        if (ret == 0) {
+
 #if 1
-			std::vector<float> m_pointCloudDepth;
-		    std::vector<BYTE> m_pointCloudColor;
-		    if (m_pointCloudDepth.size() != (size_t)(config.colorWidth * config.colorHeight * 3)) m_pointCloudDepth.resize(config.colorWidth * config.colorHeight * 3);
-		    else                                                          std::fill(m_pointCloudDepth.begin(), m_pointCloudDepth.end(), 0.0f);
+		std::vector<float> m_pointCloudDepth;
+		std::vector<BYTE> m_pointCloudColor;
+		if (m_pointCloudDepth.size() != (size_t)(config.colorWidth * config.colorHeight * 3)) m_pointCloudDepth.resize(config.colorWidth * config.colorHeight * 3);
+		else                                                          std::fill(m_pointCloudDepth.begin(), m_pointCloudDepth.end(), 0.0f);
 
-		    if (m_pointCloudColor.size() != (size_t)(config.colorWidth * config.colorHeight * 3)) m_pointCloudColor.resize(config.colorWidth * config.colorHeight * 3);
-		    else                                                          std::fill(m_pointCloudColor.begin(), m_pointCloudColor.end(), 0);
+		if (m_pointCloudColor.size() != (size_t)(config.colorWidth * config.colorHeight * 3)) m_pointCloudColor.resize(config.colorWidth * config.colorHeight * 3);
+		else                                                          std::fill(m_pointCloudColor.begin(), m_pointCloudColor.end(), 0);
 
-			WaitForSingleObject(updatePCHandle, INFINITE);
-			ResetEvent(updatePCHandle);
-            // prevent assertion fail
-            struct CloudPoint cloudpoint = {0.0, 0.0, 0.0, 0, 0, 0};
-            cloudPoint.push_back(cloudpoint);
-            for (int i = 0 ; i < pcl_depth_size; i+=3){
-		        if (depth_frame_out[i] != 0 && depth_frame_out[i+1] != 0 && depth_frame_out[i+2] !=0){
-		        	struct CloudPoint cloudpoint = { depth_frame_out[i], depth_frame_out[i+ 1], depth_frame_out[i+2], color_frame_out[i], color_frame_out[i+ 1], color_frame_out[i+2]};
-		        	cloudPoint.push_back(cloudpoint);
-		        }
+		WaitForSingleObject(updatePCHandle, INFINITE);
+		ResetEvent(updatePCHandle);
+		// prevent assertion fail
+		struct CloudPoint cloudpoint = {0.0, 0.0, 0.0, 0, 0, 0};
+		cloudPoint.push_back(cloudpoint);
+		for (int i = 0 ; i < pcl_depth_size; i+=3){
+			if (depth_frame_out[i] != 0 && depth_frame_out[i+1] != 0 && depth_frame_out[i+2] !=0){
+				struct CloudPoint cloudpoint = { depth_frame_out[i], depth_frame_out[i+ 1], depth_frame_out[i+2], color_frame_out[i], color_frame_out[i+ 1], color_frame_out[i+2]};
+				cloudPoint.push_back(cloudpoint);
 			}
-            if (count <= 0) {
-                PlyWriter::writePly(cloudPoint, "123.ply");
-                count++;
-            }
+		}
+		if (count <= 0) {
+			PlyWriter::writePly(cloudPoint, "123.ply");
+			count++;
+		}
 #endif
-            vector<cv::Point3f> m3Dpoints;
-            vector<cv::Vec3b> m3Dbgr;
-            for (int i = 0; i < cloudPoint.size() ; i++) {
-                cv::Point3f point3f;
-                point3f.x = cloudPoint[i].x;
-                point3f.y = (-cloudPoint[i].y);
-                point3f.z = (-cloudPoint[i].z);
-                m3Dpoints.push_back(point3f);
+		vector<cv::Point3f> m3Dpoints;
+		vector<cv::Vec3b> m3Dbgr;
+		for (int i = 0; i < cloudPoint.size() ; i++) {
+			cv::Point3f point3f;
+			point3f.x = cloudPoint[i].x;
+			point3f.y = (-cloudPoint[i].y);
+			point3f.z = (-cloudPoint[i].z);
+			m3Dpoints.push_back(point3f);
 
-                cv::Vec3b pix_rgb;
-                pix_rgb[0] = cloudPoint[i].b;
-                pix_rgb[1] = cloudPoint[i].g;
-                pix_rgb[2] = cloudPoint[i].r;
-                m3Dbgr.push_back(pix_rgb);
+			cv::Vec3b pix_rgb;
+			pix_rgb[0] = cloudPoint[i].b;
+			pix_rgb[1] = cloudPoint[i].g;
+			pix_rgb[2] = cloudPoint[i].r;
+			m3Dbgr.push_back(pix_rgb);
 
-            }
-            cv::Mat point_cloud { m3Dpoints };
-            cv::Mat color_cloud { m3Dbgr };
+		}
+		cv::Mat point_cloud { m3Dpoints };
+		cv::Mat color_cloud { m3Dbgr };
 #ifdef SUPPORT_VIZ
-            cv::viz::WCloud cloud_widget(point_cloud, color_cloud);
-            window.showWidget( "window", cloud_widget );
-            window.spinOnce();
+		cv::viz::WCloud cloud_widget(point_cloud, color_cloud);
+		window.showWidget( "window", cloud_widget );
+		window.spinOnce();
 #endif
-        }
+
     }
     close_device(true);
 }
@@ -1855,8 +1879,10 @@ void point_cloud_view_with_opengl() {
     //eSPDI camera open
 	int ret = open_device(true);
     cout << "\nopen_device:"<< ret << endl;
-    if(ret < 0)
-    	return;
+    if (ret != 0) {
+        cout << "open devices failed"<< endl;
+        return;
+    }
 
 	int pcl_depth_size = config.depthWidth * config.depthHeight * 3 * sizeof(float);
 	int pcl_color_size = config.colorWidth * config.colorHeight * 3 * sizeof(BYTE); 
@@ -1911,25 +1937,24 @@ void point_cloud_view_with_opengl() {
         //eSPDI camera get frame
         int count = 0;
         vector<CloudPoint> cloudPoint;
-        if (ret == 0)
-        {
-			std::vector<float> m_pointCloudDepth;
-		    std::vector<BYTE> m_pointCloudColor;
-		    if (m_pointCloudDepth.size() != (size_t)(config.colorWidth * config.colorHeight * 3)) m_pointCloudDepth.resize(config.colorWidth * config.colorHeight * 3);
-		    else                                                          std::fill(m_pointCloudDepth.begin(), m_pointCloudDepth.end(), 0.0f);
 
-		    if (m_pointCloudColor.size() != (size_t)(config.colorWidth * config.colorHeight * 3)) m_pointCloudColor.resize(config.colorWidth * config.colorHeight * 3);
-		    else                                                          std::fill(m_pointCloudColor.begin(), m_pointCloudColor.end(), 0);
+		std::vector<float> m_pointCloudDepth;
+		std::vector<BYTE> m_pointCloudColor;
+		if (m_pointCloudDepth.size() != (size_t)(config.colorWidth * config.colorHeight * 3)) m_pointCloudDepth.resize(config.colorWidth * config.colorHeight * 3);
+		else                                                          std::fill(m_pointCloudDepth.begin(), m_pointCloudDepth.end(), 0.0f);
 
-			WaitForSingleObject(updatePCHandle, INFINITE);
-			ResetEvent(updatePCHandle);
-            point_num = (pcl_depth_size / sizeof(float)) / 3;
-            glBindBuffer(GL_ARRAY_BUFFER, gVerticesBuffer);
-            glBufferData(GL_ARRAY_BUFFER, point_num * 3 * sizeof(float), &depth_frame_out[0], GL_STATIC_DRAW);
+		if (m_pointCloudColor.size() != (size_t)(config.colorWidth * config.colorHeight * 3)) m_pointCloudColor.resize(config.colorWidth * config.colorHeight * 3);
+		else                                                          std::fill(m_pointCloudColor.begin(), m_pointCloudColor.end(), 0);
 
-            glBindBuffer(GL_ARRAY_BUFFER, gColorBuffer);
-            glBufferData(GL_ARRAY_BUFFER, point_num * 3 * sizeof(uchar), &color_frame_out[0], GL_STATIC_DRAW);
-        }
+		WaitForSingleObject(updatePCHandle, INFINITE);
+		ResetEvent(updatePCHandle);
+		point_num = (pcl_depth_size / sizeof(float)) / 3;
+		glBindBuffer(GL_ARRAY_BUFFER, gVerticesBuffer);
+		glBufferData(GL_ARRAY_BUFFER, point_num * 3 * sizeof(float), &depth_frame_out[0], GL_STATIC_DRAW);
+
+		glBindBuffer(GL_ARRAY_BUFFER, gColorBuffer);
+		glBufferData(GL_ARRAY_BUFFER, point_num * 3 * sizeof(uchar), &color_frame_out[0], GL_STATIC_DRAW);
+
 
         cv::updateWindow(point_cloud_wd.id);
         k = cv::waitKey(1);
